@@ -1,0 +1,174 @@
+
+@font-face{
+    font-family: AdorshoLipi;
+    src: url("../font/AdorshoLipi.ttf");
+}
+@font-face{
+    font-family: Padauk;
+    src: url("../font/Padauk-Regular.ttf");
+}
+
+@font-face{
+    font-family: Zawgyi;
+    src: url("../font/Zawgyi-One-20051130.ttf");
+}
+
+body{
+    border: 1px solid darkcyan;
+    background-color: rgb(207, 203, 203);
+    color: black;
+    font-family: AdorshoLipi, Zawgyi ;
+}
+
+.dividerdivend{
+    margin-top: 5px;
+    width: 100%;
+    height: 30px;
+    background-color: #181716;
+}
+.headerdiv{
+    text-align: center;
+    color: rgb(0, 0, 0);
+}
+.ben{
+    font-family: AdorshoLipi;
+}
+.controllerdiv{
+    display: flex;
+    flex-direction: row;
+}
+
+hr{
+    margin-top: 0;
+    height: 0;
+    border: 4px solid darkred;
+    flex: 9;
+}
+.inputdiv{
+    text-align: center;
+    flex: 3;
+    display: flex;
+    flex-direction: row;
+}
+.paliinput, .genericinput{
+  flex: 4;
+    width: 50%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    border-radius: 4px;
+    font-size: 16px;
+    font-family: AdorshoLipi;
+}
+.palisearchbutton{
+  flex: 1;
+}
+.palisearchbutton:hover{
+  color: green;
+  font-weight: bold;
+}
+.datadiv{
+  border: 1px solid black;
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.left{
+  min-width: 250px;
+  flex: 1;
+  border: 1px solid blue;
+  padding: 10px;
+  height: 70vh;
+  overflow-y: auto;
+}
+
+.right{
+ flex: 2;
+  border: 1px solid blue;
+  padding: 10px;
+  height: 70vh;
+  overflow-y: auto;
+}
+
+
+
+.wordli{
+  font-size: 13px;
+  cursor: default;
+}
+.wordli:hover{
+  background-color: #7A6262;
+  color: white;
+}
+
+.wordliselected,.wbtnselected,.catbtnselected, .senbtnselected{
+  background-color: rgb(0, 0, 0);
+  color: white;
+  font-weight: bold;
+}
+.searchfilterdiv{
+  font-family: AdorshoLipi;
+  flex-direction: column;
+}
+.rightoldiv{
+  margin-top: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.categorydiv, .subcategorydiv{
+  display: flex;
+  flex-direction: row;
+  border: 1px solid red;
+  justify-content:justify;
+}
+.catbutton,.subcatbutton{
+  font-family: AdorshoLipi;
+  flex: 1;
+}
+.active, .activewordbutton{
+  background-color: red;
+  color: white;
+  font-weight: bold;
+}
+.catselected, .subcatselected, .subcatbtnselected{
+  background-color: black;
+  color: white;
+}
+.ppsspan{
+  color: darkred;
+  font-weight: bold;
+  cursor: pointer;
+}
+.ppsspan:hover{
+  color: blue;
+}
+#savebutton{
+  font-family: AdorshoLipi;
+}
+.leftol{
+  margin-top: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.leftli{
+	cursor: pointer;
+}
+.leftlidate{
+	font-size: 10px;
+}
+.activeleftbtn, .activeleftli{
+  background-color: red;
+  color: white;
+  font-weight: bold;
+}
+.starred{
+  background-color: rgba(153, 57, 13, 0.932);
+  color: white;
+}
+
+#lefttabdiv{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+

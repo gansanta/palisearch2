@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>পালি সার্চ</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./css/palisearch.css?sfffs" />
+    
+    <script src="./js/palisearch.js?fs" charset="utf-8"></script>
+    <script src="./js/titlelist.js?fs" charset="utf-8"></script>
+    <script src="./js/d3.js" charset="utf-8"></script>
+</head>
+<body>
+    <div>
+        <div id="inwrapperparent" class="inwrapperparent">
+            <div class="inputwrapper">
+                <div class="inputdiv">
+                    <input id="paliinput" class="paliinput" list="palilist" placeholder="পালি সার্চ করুন" type="search" />
+                    <datalist id="palilist">  </datalist>
+                </div>
+                <div class="inputdiv">
+                    <button id="resultwlbtn" class="palisearchbutton">Result <br> (wordlist)</button>
+                    <button id="resultppbtn" class="palisearchbutton">Result <br> (page by page)</button>
+                </div>
+            </div>
+            <div style="text-align: center">
+                <input class="option" id="option1" type="checkbox" value="startswith">
+                <label for="option1">Starts with (result: <b>Ha</b>sati)</label> <span style="padding: 0 5px; background-color: brown; color: white; cursor: pointer" title="Only words starting with the search term will be included. takes only a minute.">info</span><br>
+
+                <input class="option" id="option2" type="checkbox" value="endswith">
+                <label for="option2">Ends with (result: Dā<b>ha</b>) </label><span style="padding: 0 5px; background-color: brown; color: white; cursor: pointer" title="Only words ending with the search term will be included. takes only a minute.">info</span><br>
+
+                <input class="option" id="option3" type="checkbox" value="includes" checked>
+                <label for="option3">All (result: <b>Ha</b>sati, visa<b>ha</b>ti, dā<b>ha</b>) </label><span style="padding: 0 5px; background-color: brown; color: white; cursor: pointer" title="all words starting with, or ending with or containing the search term will be included. takes a few minutes.">info</span>
+            </div>
+            <div class="dividerdivend"></div>
+           
+
+            <div id="paliinfo" class="paliinfo"></div>
+            <div id="palidata" class="palidata"></div>
+
+        </div>
+        <div class="datadiv">
+          <div class="left">
+			<div id="lefttabdiv">
+				<div>
+                    <button id="searchhistorybutton" sorttype="date">Search History by date</button><br>
+                    <button id="sortbyletterbutton" sorttype="letter">Search History by letter</button>
+
+                </div>
+                
+				<button id="wordlistbutton">Toggle Wordlist</button>
+			</div>
+            <div id="wordgroupdiv" class="wordgroupdiv"></div>
+            <div class="leftol">
+                <ol id="lefthistoryol"></ol>
+                <ol id="leftol"></ol>
+            </div>
+          </div>
+          <div class="right">
+            <div id="progressdiv" class="progressdiv">
+                <div id="mulprogressdiv" class="progresscontentdiv"></div>
+                <div id="attprogressdiv" class="progresscontentdiv"></div>
+                <div id="tikprogressdiv" class="progresscontentdiv"></div>
+                <div id="annprogressdiv" class="progresscontentdiv"></div>
+            </div>
+            <div id="searchfilterdiv" class="searchfilterdiv">
+              <div id="categorydiv" class="categorydiv"></div>
+              <div id="subcategorydiv" class="subcategorydiv"></div>
+              <div id="sengroupdiv" class="sengroupdiv"></div>
+            </div>
+            <div class="rightoldiv">
+                <ol id="rightol"></ol>
+            </div>
+          </div>
+        </div>
+    </div>
+</body>
+</html>

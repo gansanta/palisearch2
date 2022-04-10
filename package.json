@@ -1,0 +1,19 @@
+{
+  "name": "palisearch",
+  "productName": "palisearch",
+  "version": "3.1.0",
+  "description": "পালি সার্চ",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "gansanta bhikkhu, email: schakma94@gmail.com",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^11.3.0",
+    "electron-winstaller": "^5.0.0"
+  },
+  "dependencies": {
+    "nedb": "^1.8.0"
+  }
+}
