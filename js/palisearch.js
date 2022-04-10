@@ -110,7 +110,7 @@ let previous = {
     dbpath: null,
     db: null
 }
-let pagewordsDocs = null //preload it
+let pagewordsDocs = [] //preload it
 let isResultSaved = false //flag for saving result
 
 let allpagesfolderpath = path.join(__dirname,"db2","pages")
@@ -265,23 +265,30 @@ function attachListners(){
 
 }
 async function loadPagewordsDatabase(){
-  let muldb = getDB("./db2/mulwords.db")
-  let attdb = getDB("./db2/attwords.db")
-  let tikdb = getDB("./db2/tikwords.db")
-  let anndb = getDB("./db2/annwords.db")
-
   let categories = ["mul","att","tik","ann"]
 
+  pagewordsDocs = [] //reset docs
   
   for(let c of categories){
-    let db = getDB('./db2/'+c+"words.db")
+    let dbpath = './db2/'+c+"words.db"
+    let db = getDB(dbpath)
+    console.log(dbpath)
+
     let docs = await getDocs(db)
+    console.log(docs)
+
     pagewordsDocs.push(...docs)
   }
 
-  if(pagewordsDocs.length>0) return "done"
-  else return "word db loading failed"
+  function getDocs(db){
+    return new Promise((resolve,rejejct)=>{
+        db.find({},(err,docs)=>{
+          resolve(docs)
+        })    
+    })  
+  }
 
+  return "done"
 }
 
 function sortSearchHistoryByLetter(){
@@ -398,7 +405,7 @@ function handleAllPagesPaliInput(type="pagebypage"){
   d3.select("rightol").html("সার্চ চলছে. <br>একটু অপেক্ষা করুন ...")
 
   //get filelist
-  if(!pagewordsDocs){
+  if(pagewordsDocs.length <= 0){
     d3.select("#rightol").html("ডাটাবেজ লোড হচ্ছে। একটু অপেক্ষা করুন ...")
     loadPagewordsDatabase().then(result=>{
       d3.select("#rightol").html("ডাটাবেজ লোড হয়েছে।")
