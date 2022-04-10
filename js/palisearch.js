@@ -264,14 +264,24 @@ function attachListners(){
   d3.select("#sortbyletterbutton").on("click", handleSearchHistoryClick)
 
 }
-function loadPagewordsDatabase(){
-  return new Promise((resolve,rejejct)=>{
-    let db = getDB(pagewordsdbpath)
-    db.find({},(err,docs)=>{
-      pagewordsDocs = docs
-      resolve("pagewordsdb loaded.")
-    })
-  })
+async function loadPagewordsDatabase(){
+  let muldb = getDB("./db2/mulwords.db")
+  let attdb = getDB("./db2/attwords.db")
+  let tikdb = getDB("./db2/tikwords.db")
+  let anndb = getDB("./db2/annwords.db")
+
+  let categories = ["mul","att","tik","ann"]
+
+  
+  for(let c of categories){
+    let db = getDB('./db2/'+c+"words.db")
+    let docs = await getDocs(db)
+    pagewordsDocs.push(...docs)
+  }
+
+  if(pagewordsDocs.length>0) return "done"
+  else return "word db loading failed"
+
 }
 
 function sortSearchHistoryByLetter(){
