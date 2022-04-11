@@ -587,54 +587,124 @@ async function handleAllPagesPaliInput(type="pagebypage"){
   }
 }
 
+
+
+async function getFilteredFilelist(bnwords){
+  let filtereddocs = pagewordsDocs.filter(doc => bnwords.every(bw=>doc.pagewords.find(dp=>dp.includes(bw))))
+  let filelist = filtereddocs.map(fd => fd.filepath)
+  return filelist
+} 
+
 async function getParaDocList(bnwords){
   let firstword = bnwords[0]
   let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => ff.includes(firstword)))
+  
   //console.log(filtereddocs)
 
   let paralist = [] //paras including all words of bntext
+  let filelist = []
+  let fileparalist = []
   for(let doc of filtereddocs){
+    //get paradocs in a file
     let fparadocs = await getFilteredParaDocs(doc.filepath, bnwords)
     if(fparadocs.length>0) {
       //fparadocs = fparadocs.map(fpd =>{ return {paradoc:fpd, filepath:doc.filepath} })
       paralist.push(...fparadocs)
       
+      filelist.push(doc.filepath)
+      //fileparalist[doc.filepath] = fparadocs
+      fileparalist.push({filepath:doc.filepath, paradocs:fparadocs})
       //I also need the matching words from that para!
       
     }
 
   }
-  return paralist
+  return {paralist:paralist, filelist:filelist, fileparalist:fileparalist}
 }
 async function preparePageByPageSearch(bnwords){
-  let paralist = await getParaDocList(bnwords)
-  console.log(paralist)
+  //let {paralist, filelist, fileparalist} = await getParaDocList(bnwords)
+  //console.log(paralist, filelist, fileparalist)
+  let filelist = await getFilteredFilelist(bnwords)
+  //console.log(filelist)
+
+  //console.log(pagewordsDocs.length)
+  //return
+
+  //find categories
+  d3.select("#categorydiv").html("") //reset
+  let groupcatobjs = await getGroupedCatFilelist(filelist)
+  //console.log(groupcatobjs)
+  showCatButtons(groupcatobjs, bnwords)
+}
+
+function showCatButtons(groupcatobjs, bnwords){
+  let catlabels = ["মূল","অর্থকথা","টীকা","অন্যান্য"]
+  let cattags = ["mul","att","tik","ann"]
+
+  d3.select("#categorydiv").selectAll("button")
+      .data(catlabels)
+      .enter()
+      .append("button")
+      .classed("catbutton",true)
+      .attr("tag",function(d,i){return cattags[i]})
+      .attr("num",function(d,i){return groupcatobjs[cattags[i]].length})
+      .html(function(d,i){
+        return d+" <span style='font-weight:bold;'>"+groupcatobjs[cattags[i]].length+"</span>"
+      })
+      .on("click", async function(d,i){
+        setElementSelected(this, "catbtnselected")
+        
+        //get subcategory file list
+        let cattag = this.getAttribute("tag")  
+        let catfiles = groupcatobjs[cattag]
+
+        await showSubcatButtons(cattag,catfiles, bnwords)
+
+      })
+    
+    clickFirstResultChild("categorydiv")
 
 }
 
+
+function areSeriallyPositioned(sentence, words){
+  let wordindexes = []
+
+  for(let i=0; i<words.length; i++){
+    let index = sentence.indexOf(words[i])
+    if(index == -1) return false
+
+    if(i == 0) wordindexes.push(index)
+    else{
+      let difference = index - wordindexes[i-1]
+      if(difference <= 0) return false
+    }
+  }
+
+  console.log(wordindexes)
+  return true
+}
+
+/**
+ * 
+ * @param {*} filepath 
+ * @param {*} bnwords 
+ * @returns fndocs filtered pagedocs
+ */
 function getFilteredParaDocs(filepath, bnwords){
   let db = getDB(filepath)
   return new Promise((resolve,reject)=>{
     db.find({},(err,ndocs)=>{
       //console.log(ndocs)
       let fndocs = ndocs.filter(ndoc=>bnwords.every(bnword=>ndoc.content.includes(bnword)))
-/*      
-      //in every para, look for matching words
-      let matchedwords = []
-      if(fndocs.length>0){
-        for(let fdoc of fndocs){
-          //console.log(fdoc)
-          let div = document.createElement("div")
-          //div.innerHTML = fdoc.content
-          //let words = div.innerText.split(" ").filter(w=> bnwords.find(bw => bw.includes(w)))
-          
-          //if(words.length>0) matchedwords = matchedwords.push(...words)
-        }
+
+      let div = document.createElement("div")
+      
+      for(let i=0; i<fndocs.length; i++){
+        let content = fndocs[i].content 
+        div.innerHTML = content
+        fndocs[i].content = div.innerText
       }
-      //matchedwords = [...new Set(matchedwords)]
-      fndocs = fndocs.sort((a,b)=> a.paraid-b.paraid)
-      //console.log(matchedwords)
-*/
       resolve(fndocs)
     })
   })
@@ -907,8 +977,46 @@ function clickFirstResultChild(divid){
     
   }
 }
+async function showSubcatButtons(cattag, catfiles, bnwords){
+  let subcatdivid = "subcategorydiv"
+  d3.select("#"+subcatdivid).html("") //reset
+  d3.select("#sengroupdiv").html("")
+  d3.select("#rightol").html("")//
 
-function showSubcatButtons(cattag, catfiles, type, bntext, word,  option, source, savedata){
+
+  //console.log(cattag, catsenobjs)
+  let subcatdata = ["বিনয়","সুত্র","অভিধর্ম"]
+  let subcattagdata = ["vin","sut","abh"]
+
+  if(cattag == "ann"){
+    subcatdata = ["বি.মার্গ","ব্যাকরণ","অন্যান্য"]
+    subcattagdata = ["vis","bya","ann"]
+  }
+
+  let scfileobjs = await getGroupedSubcatFilelist(cattag,catfiles)
+  console.log(scfileobjs)
+  d3.select("#subcategorydiv").selectAll("button")
+    .data(subcatdata)
+    .enter()
+    .append("button")
+    .classed("catbutton",true)
+    .attr("tag",function(d,i){return subcattagdata[i]})
+    .attr("num",function(d,i){return scfileobjs[subcattagdata[i]].length})
+    .html(function(d,i){
+      return d+" <span style='font-weight:bold;'>"+scfileobjs[subcattagdata[i]].length+"</span>"
+    })
+    .on("click", async function(d,i){
+      setElementSelected(this, "subcatbtnselected")
+      let subcattag = this.getAttribute("tag")
+      
+      //show filegroupbuttons
+      let groupnum = getNumberOfGroups(scfileobjs[subcattag].length, FILENUM)
+      showFilegroupButtons(groupnum, "sengroupdiv", scfileobjs[subcattag], bnwords)
+    })
+
+    clickFirstResultChild(subcatdivid)
+}
+function showSubcatButtonsOld(cattag, catfiles, type, bntext, word,  option, source, savedata){
   let subcatdivid = "subcategorydiv"
   d3.select("#"+subcatdivid).html("") //reset
   d3.select("#sengroupdiv").html("")
@@ -952,7 +1060,132 @@ function showSubcatButtons(cattag, catfiles, type, bntext, word,  option, source
 }
 
 
-function showFilegroupButtons(divid, groupnum, scobjfilelist, type, bntext,  option,  word,savedata, source){
+function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
+  d3.select("#"+subcatdivid).html("") //reset
+  //create an array of numbers, to be used on button text
+  let dataarray = [...Array(groupnum+1).keys()].slice(1) 
+
+  d3.select("#"+subcatdivid).selectAll("button")
+    .data(dataarray)
+    .enter()
+    .append("button")
+    .attr("index",function(d){return d})
+    //.attr("num",function(d,i){return scfilelist[subcattagdata[i]].length})
+    .text(function(d){return d})
+    .on("click", async function(i){
+      setElementSelected(this, "senbtnselected")
+      d3.select("#rightol").html("") //reset senlist
+
+      //get the number 
+      let tabindex = parseInt(this.getAttribute("index"), 10)
+
+      //here sorting should be by pageid or filename
+      //scfilelist.sort((a,b)=>a.filepath.localeCompare(b.filepath,"en", {numeric:true}))
+      scobjfilelist.sort((a,b)=>a.pageid.localeCompare(b.pageid, "en", {numeric:true}))
+      
+      //separate only filelist
+      let scfilelist = scobjfilelist.map(w => w.filepath)
+      let tabfilelist = getListForTab(tabindex-1, scfilelist, FILENUM)
+      
+      console.log(tabfilelist)
+
+      //let filteredfileparalist = fileparalist.filter(fp => tabfilelist.find(tf => tf.filepath == fp.filepath) )
+      //console.log(filteredfileparalist)
+      
+      let tabsenlist = await getTabSenList(tabfilelist, bnwords)
+      if(tabsenlist.length <= 0){
+        //click on the next sibling
+        let nextbutton = this.nextElementSibling
+        if(nextbutton && nextbutton.tagName == "BUTTON") nextbutton.click()
+       
+      }
+      else showTabSentences(tabsenlist)
+    })
+
+  let firstbutton = document.querySelector("#"+subcatdivid).firstChild
+  if(firstbutton && firstbutton.tagName == "BUTTON") firstbutton.click()
+}
+
+async function getTabSenList(tabfilelist, bnwords){
+  console.log(tabfilelist)
+  
+  //get tab sentences
+  let tabsenlist = []
+
+  for(let tf of tabfilelist){
+    let filepath = tf.filepath
+    let cat = tf.cat
+    let subcat = tf.subcat
+
+    //get bookname and pagename
+    let {booktitle,bookid,pageid} = getBookTitle(filepath)
+    let pagetitle = getPageTitle(bookid, pageid)
+    //console.log(cat, subcat, booktitle, pagetitle)
+
+    //get paradocs
+    let paradocs = await getFilteredParaDocs(filepath, bnwords)
+    console.log(paradocs)
+
+    for(let pdoc of paradocs){
+      let sentences = textToSentences(pdoc.content)
+      sentences = sentences.filter(s => s && areSeriallyPositioned(s, bnwords))
+      tabsenlist.push(...sentences)
+    }
+    console.log(tabsenlist)
+      
+  }
+
+  return tabsenlist
+}
+function textToSentences(text){
+  const splitters = [';',';','‘','’','।','॥','!','?','–',"–"]
+  let sentences = splitMulti(text, splitters)
+  sentences =  sentences.map(s=> s.trim()).filter(e => e) //filter and keep only those that return true, excluding null
+  return sentences
+
+  function splitMulti(str, tokens, tempSplitter="_"){
+    //var tempChar = tokens[0]; // We can use the first token as a temporary join character
+    for(var i = 1; i < tokens.length; i++){
+        str = str.split(tokens[i]).join(tokens[i]+tempSplitter)
+    }
+    str = str.split(tempSplitter)
+    return str
+}
+}
+function showTabSentences(tabsenlist){
+  let rightol = d3.select("#rightol").html("") //reset
+  if(tabsenlist.length == 0) return
+
+  rightol.selectAll("li")
+    .data(tabsenlist)
+    .enter()
+    .append("li")
+    .attr("index", function(d,i){return i})
+    .classed("senli", true)
+    //.html(function(d,i){return getInnerHTML(d,i,btlist,ptlist,type,bntext)})
+    .html(function(d,i){return d})
+    .append("span")
+    .classed("ppsspan", true)
+    //.html(function(d,i){return btlist[i]+" => "+ptlist[i]})
+
+
+}
+
+function getBookTitle(filepath){
+  let fp = filepath.replace("./db2/pages/","")
+  fp = fp.split("/")
+  let pageid = fp[fp.length-1]
+  let bookid = pageid.slice(0, -2)
+  //console.log(pageid, bookid)
+  let booktitle = ""
+  if(bookidlist.includes(bookid)){
+    let bookindex = bookidlist.indexOf(bookid)
+    booktitle = booktitlelist[bookindex]
+  }
+  return {booktitle:booktitle,bookid:bookid,pageid:pageid}
+}
+
+function showFilegroupButtonsOld(divid, groupnum, scobjfilelist, type, bntext,  option,  word,savedata, source){
   d3.select("#"+divid).html("") //reset
   //create an array of numbers, to be used on button text
   let dataarray = [...Array(groupnum+1).keys()].slice(1) 
@@ -1002,7 +1235,7 @@ function showFilegroupButtons(divid, groupnum, scobjfilelist, type, bntext,  opt
  * 
  * Here actually file processing for the word begings
  */
-function processTabFiles(tabfilelist,type, bntext, option, savedata, source){
+function processTabFilesOld(tabfilelist,type, bntext, option, savedata, source){
   //console.log(bntext)
   let fileindex = 0
   let tabsenlist = []
@@ -1085,7 +1318,8 @@ function getFilteredDocs(docs, word){
   })
 }
 
-function showTabSentences(tabsenlist,type,savedata, source,bntext, option){
+
+function showTabSentencesOld(tabsenlist,type,savedata, source,bntext, option){
   let rightol = d3.select("#rightol").html("") //reset
    
   if(tabsenlist.length == 0) return
@@ -1264,6 +1498,8 @@ function getGroupedSubcatFilelist(cattag, catfiles){
 }
 
 function getGroupedCatFilelist(filelist){
+  console.log(filelist)
+
   return new Promise((resolve, reject)=>{
     let obj = {mul:[],att:[],tik:[],ann:[]}
     
