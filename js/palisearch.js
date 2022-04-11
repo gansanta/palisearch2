@@ -418,7 +418,21 @@ async function handleAllPagesPaliInput(type="pagebypage"){
   
   async function processPagewordsDocsNew(){
     //console.log(pagewordsDocs)
+
     let bnwords = bntext.split(" ")
+    console.log(bnwords)
+
+    //if multiple words found, just show the result in pagebypage manner
+    if(bnwords.length>1) {
+      console.log("multiple words detected. So showing result page by page!")
+      await preparePageByPageSearch(bnwords)
+
+    }
+    else { //if only single word found, show its variations
+      console.log("single word "+bntext+" found. Its variations will be given.")
+    }
+    return 
+
     let firstword = bnwords[0]
 
     //array.filter(a=> a.startsWith(word) || a.endsWith(word))
@@ -431,11 +445,10 @@ async function handleAllPagesPaliInput(type="pagebypage"){
     for(let doc of filtereddocs){
       let fparadocs = await getFilteredParaDocs(doc.filepath, bnwords)
       if(fparadocs.length>0) {
-        fparadocs = fparadocs.map(fpd =>{
-          return {paradoc:fpd, filepath:doc.filepath}
-        })
+        //fparadocs = fparadocs.map(fpd =>{ return {paradoc:fpd, filepath:doc.filepath} })
         paralist.push(...fparadocs)
-
+        
+        //I also need the matching words from that para!
         
       }
 
@@ -493,18 +506,7 @@ async function handleAllPagesPaliInput(type="pagebypage"){
 
   }
 
-  function getFilteredParaDocs(filepath, bnwords){
-    let db = getDB(filepath)
-    return new Promise((resolve,reject)=>{
-      db.find({},(err,ndocs)=>{
-        //console.log(ndocs)
-        let fndocs = ndocs.filter(ndoc=>bnwords.every(bnword=>ndoc.content.includes(bnword)))
-        fndocs = fndocs.sort((a,b)=> a.paraid-b.paraid)
-        resolve(fndocs)
-      })
-    })
-    
-  }
+  
   
 
   function hasAllWords(arr1, arr2){
@@ -584,6 +586,61 @@ async function handleAllPagesPaliInput(type="pagebypage"){
     })
   }
 }
+
+async function getParaDocList(bnwords){
+  let firstword = bnwords[0]
+  let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => ff.includes(firstword)))
+  //console.log(filtereddocs)
+
+  let paralist = [] //paras including all words of bntext
+  for(let doc of filtereddocs){
+    let fparadocs = await getFilteredParaDocs(doc.filepath, bnwords)
+    if(fparadocs.length>0) {
+      //fparadocs = fparadocs.map(fpd =>{ return {paradoc:fpd, filepath:doc.filepath} })
+      paralist.push(...fparadocs)
+      
+      //I also need the matching words from that para!
+      
+    }
+
+  }
+  return paralist
+}
+async function preparePageByPageSearch(bnwords){
+  let paralist = await getParaDocList(bnwords)
+  console.log(paralist)
+
+}
+
+function getFilteredParaDocs(filepath, bnwords){
+  let db = getDB(filepath)
+  return new Promise((resolve,reject)=>{
+    db.find({},(err,ndocs)=>{
+      //console.log(ndocs)
+      let fndocs = ndocs.filter(ndoc=>bnwords.every(bnword=>ndoc.content.includes(bnword)))
+/*      
+      //in every para, look for matching words
+      let matchedwords = []
+      if(fndocs.length>0){
+        for(let fdoc of fndocs){
+          //console.log(fdoc)
+          let div = document.createElement("div")
+          //div.innerHTML = fdoc.content
+          //let words = div.innerText.split(" ").filter(w=> bnwords.find(bw => bw.includes(w)))
+          
+          //if(words.length>0) matchedwords = matchedwords.push(...words)
+        }
+      }
+      //matchedwords = [...new Set(matchedwords)]
+      fndocs = fndocs.sort((a,b)=> a.paraid-b.paraid)
+      //console.log(matchedwords)
+*/
+      resolve(fndocs)
+    })
+  })
+  
+}
+
 function getFilteredWords(pwords, option, bntext){
   let bnwords = bntext.split(" ")
   bnwords.map(w => w.trim())
