@@ -1099,7 +1099,7 @@ function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
         if(nextbutton && nextbutton.tagName == "BUTTON") nextbutton.click()
        
       }
-      else showTabSentences(tabsenlist)
+      else showTabSentences(tabsenlist, bnwords)
     })
 
   let firstbutton = document.querySelector("#"+subcatdivid).firstChild
@@ -1129,9 +1129,12 @@ async function getTabSenList(tabfilelist, bnwords){
     for(let pdoc of paradocs){
       let sentences = textToSentences(pdoc.content)
       sentences = sentences.filter(s => s && areSeriallyPositioned(s, bnwords))
-      tabsenlist.push(...sentences)
+      
+      for(let sen of sentences){
+        tabsenlist.push({sentence: sen, filepath:filepath, booktitle:booktitle, pagetitle:pagetitle})
+      }
+      
     }
-    console.log(tabsenlist)
       
   }
 
@@ -1152,23 +1155,34 @@ function textToSentences(text){
     return str
 }
 }
-function showTabSentences(tabsenlist){
+function showTabSentences(tabsenlist, bnwords){
   let rightol = d3.select("#rightol").html("") //reset
   if(tabsenlist.length == 0) return
-
+  //let sentencelist = tabsenlist.map(t=>t.sentence)
+  //let pagetitlelist = 
   rightol.selectAll("li")
     .data(tabsenlist)
     .enter()
     .append("li")
     .attr("index", function(d,i){return i})
     .classed("senli", true)
-    //.html(function(d,i){return getInnerHTML(d,i,btlist,ptlist,type,bntext)})
-    .html(function(d,i){return d})
+    .html(function(d,i){return getInnerHTML(d.sentence, bnwords)})
+
+    //add span to html for onclick link copying 
     .append("span")
     .classed("ppsspan", true)
-    //.html(function(d,i){return btlist[i]+" => "+ptlist[i]})
+    .html(function(d,i){return d.booktitle+" => "+d.pagetitle})
 
-
+    //handle onclick on the span
+    .on("click",function(d,i){
+      let index = parseInt(this.parentElement.getAttribute("index"))
+      //console.log(tabsenlist[index])
+      
+      let filepath = tabsenlist[index].filepath
+      let senobjstring = JSON.stringify(tabsenlist[index])
+      //copy filepath to clipboard
+      electron.clipboard.writeText(senobjstring)
+    })
 }
 
 function getBookTitle(filepath){
@@ -1387,7 +1401,21 @@ function setClipboard(text){
   })
 }
 
-function getInnerHTML(d,type,bntext){
+function getInnerHTML(sentence,bnwords){
+  let words = sentence.split(" ")
+  //console.log(words)
+  let matches = words.filter(w => bnwords.find(bword => w.includes(bword)))
+  //console.log(matches)
+  let uniquematches = [...new Set(matches)]
+  //console.log(matches)
+  
+  uniquematches.forEach(um => sentence = sentence.replaceAll(um, "<b>"+um+"</b>"))
+  //console.log("after replacement: ", d)
+  
+  return sentence
+}
+
+function getInnerHTMLOld(d,type,bntext){
   //bntext is actually word in wordlist, but bntext in pagebypage
   //so treat them differently
   //console.log("after replacement: ", d)
