@@ -110,6 +110,8 @@ let previous = {
     dbpath: null,
     db: null
 }
+let dbs = {}
+
 let pagewordsDocs = [] //preload it
 let isResultSaved = false //flag for saving result
 
@@ -255,8 +257,8 @@ function task(){
 //----------------
 
 function attachListners(){
-  d3.select("#resultwlbtn").on("click", function(){handleAllPagesPaliInput("wordlist")})
-  d3.select("#resultppbtn").on("click",function(){handleAllPagesPaliInput("pagebypage")})
+  d3.select("#resultwlbtn").on("click", async function(){ await handleAllPagesPaliInput("wordlist")})
+  d3.select("#resultppbtn").on("click",async function(){ await handleAllPagesPaliInput("pagebypage")})
   
   document.querySelector("#wordlistbutton").onclick = ()=>toggleDisplayWordlist()
   
@@ -272,10 +274,10 @@ async function loadPagewordsDatabase(){
   for(let c of categories){
     let dbpath = './db2/'+c+"words.db"
     let db = getDB(dbpath)
-    console.log(dbpath)
+    //console.log(dbpath)
 
     let docs = await getDocs(db)
-    console.log(docs)
+    //console.log(docs)
 
     pagewordsDocs.push(...docs)
   }
@@ -384,7 +386,7 @@ function getBnText(){
   return bntext
 }
 
-function handleAllPagesPaliInput(type="pagebypage"){
+async function handleAllPagesPaliInput(type="pagebypage"){
   let t0 = performance.now()
 
   //clear previous result
@@ -407,17 +409,112 @@ function handleAllPagesPaliInput(type="pagebypage"){
   //get filelist
   if(pagewordsDocs.length <= 0){
     d3.select("#rightol").html("ডাটাবেজ লোড হচ্ছে। একটু অপেক্ষা করুন ...")
-    loadPagewordsDatabase().then(result=>{
-      d3.select("#rightol").html("ডাটাবেজ লোড হয়েছে।")
-      
-      processPagewordsDocs(pagewordsDocs)
-    })
-  }
-  else {
-    //console.log(bntext)
-    processPagewordsDocs(pagewordsDocs)
+    await loadPagewordsDatabase()
+    d3.select("#rightol").html("ডাটাবেজ লোড হয়েছে।")
   }
   
+  //then start processing
+  await processPagewordsDocsNew()
+  
+  async function processPagewordsDocsNew(){
+    //console.log(pagewordsDocs)
+    let bnwords = bntext.split(" ")
+    let firstword = bnwords[0]
+
+    //array.filter(a=> a.startsWith(word) || a.endsWith(word))
+    let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => ff.includes(firstword)))
+    //let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => bnwords.some(bword=>ff.includes(bword))))
+    console.log(filtereddocs)
+    
+    let paralist = [] //paras including all words of bntext
+    let ndoclist = []
+    for(let doc of filtereddocs){
+      let fparadocs = await getFilteredParaDocs(doc.filepath, bnwords)
+      if(fparadocs.length>0) {
+        fparadocs = fparadocs.map(fpd =>{
+          return {paradoc:fpd, filepath:doc.filepath}
+        })
+        paralist.push(...fparadocs)
+
+        
+      }
+
+    }
+
+    console.log(paralist)
+
+
+    let wordlist2 = [], filelist=[]
+
+    //we need word variations for every bnword
+    let wordlist = {}
+    /* wordlist should have the following structure 
+    wordlist = {
+      bnword1:{
+        variation1: [filepath,...],
+        variation2: [filepath,...],
+        ...
+      },
+      bnword2:{
+        variation1: [filepath,...],
+        variation2: [filepath...]
+      }
+      ...
+    }
+    */
+    //initialize wordlist
+    bnwords.forEach(bword => wordlist[bword] = {})
+
+    for(let doc of filtereddocs){
+      //get filepath first
+      let filepathindex = filelist.findIndex(fl => fl.filepath == doc.filepath)
+      if(filepathindex < 0) {
+        filelist.push({filepath:doc.filepath})
+        //and assign the filepath again for later user
+        filepathindex = filelist.findIndex(fl => fl.filepath == doc.filepath)
+      }
+        
+      //then get word variations for every bnword
+      for(let bword of bnwords){
+        let fdocwords = doc.pagewords.filter(dp=>dp.includes(bword))
+        for(let fword of fdocwords){
+          //check if fword already in wordlist
+          if(fword in wordlist[bword]) wordlist[bword][fword].push(doc.filepath)
+          else wordlist[bword][fword] = [doc.filepath]
+        }
+      }
+    }
+    console.log(wordlist)
+
+    //console.log(filelist)
+
+
+    //handleListHere(wordlist, filelist,type,bntext, option)
+
+  }
+
+  function getFilteredParaDocs(filepath, bnwords){
+    let db = getDB(filepath)
+    return new Promise((resolve,reject)=>{
+      db.find({},(err,ndocs)=>{
+        //console.log(ndocs)
+        let fndocs = ndocs.filter(ndoc=>bnwords.every(bnword=>ndoc.content.includes(bnword)))
+        fndocs = fndocs.sort((a,b)=> a.paraid-b.paraid)
+        resolve(fndocs)
+      })
+    })
+    
+  }
+  
+
+  function hasAllWords(arr1, arr2){
+    const check = arr1.every(element => {
+      //return arr2.find(ff => ff.startsWith(element) || ff.endsWith(element) || ff.includes(element))
+      return arr2.find(ff => ff.includes(element))
+    })
+    
+    return check
+  }
   function processPagewordsDocs(docs){
     console.log(docs[0])
 
@@ -425,6 +522,10 @@ function handleAllPagesPaliInput(type="pagebypage"){
     
     let wordlist = [], filelist=[]
     processPageDoc(docindex, docs, wordlist,filelist)
+  }
+
+  function processPageDocNew(){
+
   }
 
   function processPageDoc(docindex, docs, wordlist,filelist){
@@ -518,6 +619,19 @@ function getFilteredWordsOld(pwords, option, bntext){
   else if(option == "endswith") pwords = pwords.filter(w => w.endsWith(bntext))
   else if(option == "startends") pwords = pwords.filter(w => w.startsWith(bntext) && w.endsWith(bntext))
   return pwords
+}
+
+function getFilteredWordsNew(pwords, option, bntext){
+  let bnwords = bntext.split(" ")
+  let words = {}
+  for(let bword of bnwords){
+    let filteredwords = []
+    if(!(bword in words)) {
+      filteredwords = getFilteredWordsOld(pwords, option, bword)
+      words[bword] = filteredwords
+    }
+  }
+  return words
 }
 
 function getSearchOption(){
@@ -820,6 +934,17 @@ function showFilegroupButtons(divid, groupnum, scobjfilelist, type, bntext,  opt
   
 }
 
+/**
+ * 
+ * @param {*} tabfilelist 
+ * @param {*} type 
+ * @param {*} bntext 
+ * @param {*} option 
+ * @param {*} savedata 
+ * @param {*} source 
+ * 
+ * Here actually file processing for the word begings
+ */
 function processTabFiles(tabfilelist,type, bntext, option, savedata, source){
   //console.log(bntext)
   let fileindex = 0
@@ -1495,24 +1620,15 @@ function getDateTimeOnlyFromTimeStamp(timestamp){
 }
 
 function getDB(dbpath){
-    let db
+  let db
 
-    if(previous.dbpath == dbpath){ //check previous dbpath if already opened
-        db = previous.db
-        return db
-    }
-    else{
-        let db = getDBFromPath(dbpath)
-        previous.dbpath = dbpath //store for later check
-        previous.db = db
-        return db
-    }
-
-    function getDBFromPath(filepath){
-        const db = new Datastore({filename: filepath})
-        db.loadDatabase()
-        return db
-    }
+  if(dbpath in dbs) return dbs[dbpath]
+  else {
+    const db = new Datastore({filename: dbpath})
+    db.loadDatabase()
+    dbs[dbpath] = db
+    return db
+  }
 }
 
 function fileExists(filepath){
