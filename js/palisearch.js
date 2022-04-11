@@ -1127,11 +1127,16 @@ async function getTabSenList(tabfilelist, bnwords){
     console.log(paradocs)
 
     for(let pdoc of paradocs){
+      console.log(pdoc)
+
       let sentences = textToSentences(pdoc.content)
       sentences = sentences.filter(s => s && areSeriallyPositioned(s, bnwords))
       
       for(let sen of sentences){
-        tabsenlist.push({sentence: sen, filepath:filepath, booktitle:booktitle, pagetitle:pagetitle})
+        tabsenlist.push({
+          sentence: sen, filepath:filepath, booktitle:booktitle, pagetitle:pagetitle,
+          paraid: pdoc.paraid, paradocid:pdoc._id,category:cat, subcategory:subcat
+        })
       }
       
     }
