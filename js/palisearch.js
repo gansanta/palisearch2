@@ -2,9 +2,8 @@
 const Datastore = require("nedb")
 const path = require("path")
 const FS = require("fs")
-const ipcrenderer = require('electron').ipcRenderer
+const ipcRenderer = require('electron').ipcRenderer
 const electron = require('electron')
-
 
 const FILENUM = 3, SENNUM = 100, WORDNUM = 500
 
