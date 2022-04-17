@@ -112,7 +112,7 @@ window.onload = ()=>{
     palisen = document.querySelector("#palisen")
     palisentence = document.querySelector("#palisentence")
 
-
+  console.log("hekki")
     attachListners()
     //loadEngBNDB()
 
@@ -143,6 +143,19 @@ function attachListners(){
 
       //startUpdatingPageParaSen()
     }
+
+    document.onkeydown = (e)=>{
+      //if(e.key === 'Escape') UIM.hideAllFloatings()
+
+      //set ctrl+n for opening new window
+      //else 
+      if(e.ctrlKey && e.key == "n"){ 
+        let attributes = null
+        console.log("new window")
+        ipcRenderer.send("opennewwindow",attributes)
+      }
+      
+  }
 }
 
 function getPaliWordFolder(subfolderstartindex, fileindex, docindex){

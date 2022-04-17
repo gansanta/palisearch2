@@ -110,6 +110,8 @@ let previous = {
     dbpath: null,
     db: null
 }
+let dbs = {}
+
 let pagewordsDocs = [] //preload it
 let isResultSaved = false //flag for saving result
 
@@ -135,14 +137,12 @@ let bnsentence = ""
 //---------------
 async function separateWorddb(){
   await loadPagewordsDatabase()
-  //console.log(pagewordsDocs)
 
   let muls = pagewordsDocs.filter(doc=> doc.filename.startsWith("ann"))
   muls = muls.sort((a,b)=>a.filename.localeCompare(b.filename, "en"))
   
   //delete id
   for(let m of muls){ delete m._id}
-  console.log(muls[0])
 
   let newdbpath = "./db2/annwords.db"
   let newdb = getDB(newdbpath)
@@ -150,8 +150,6 @@ async function separateWorddb(){
     await insertDoc(muls[i], newdb)
     if(i%10 == 0) console.log(i)
   }
-
-  console.log("done")
 
 }
 function insertDoc(doc, db){
@@ -178,8 +176,6 @@ function dotest(){
         let fpath = "./db2/ff.db"
         let fdb = getDB(fpath)
         fdb.insert(docs, (err, newdocs)=>{
-          if(newdocs) console.log(newdocs[0])
-          
         })
       }
     }
@@ -188,10 +184,8 @@ function dotest(){
 function task(){
   let db = getDB(searchhistorydbpath2)
   db.find({}, (err, docs)=>{
-    console.log(docs.length, docs[0])
     
     let slistdb = getDB(shistorylistdbpath)
-    console.log(docs[1])
     //return
     
     //for every history item, create a doc in the historylist
@@ -222,7 +216,6 @@ function task(){
 
             let filelist = doc.filelist
             if(filelist){
-              //console.log(filelist, doc.searchtype)
               for(let i=0; i<filelist.length; i++){
                 if(doc.searchtype == "pagebypage")filelist[i] = filelist[i].replace("/home/palitranslation/Desktop/palisearch", ".")
                 else if(doc.searchtype == "wordlist"){
@@ -233,7 +226,6 @@ function task(){
             
             fdb.insert({filelist: doc.filelist ? doc.filelist:[]}, (err, newdoc3)=>{
               if(newdoc3){
-                console.log(newdoc3)
                 docindex++
                 handleDoc(docindex)
               }
@@ -255,13 +247,11 @@ function task(){
 //----------------
 
 function attachListners(){
-  d3.select("#resultwlbtn").on("click", function(){handleAllPagesPaliInput("wordlist")})
-  d3.select("#resultppbtn").on("click",function(){handleAllPagesPaliInput("pagebypage")})
+  d3.select("#resultbtn").on("click", async function(){ await handleAllPagesPaliInput()})
   
-  document.querySelector("#wordlistbutton").onclick = ()=>toggleDisplayWordlist()
-  
-  d3.select("#searchhistorybutton").on("click", handleSearchHistoryClick)
-  d3.select("#sortbyletterbutton").on("click", handleSearchHistoryClick)
+  document.querySelector("#paliinput").onkeydown = (e)=>{
+    if(e.key == "Enter") handleAllPagesPaliInput()
+  }
 
 }
 async function loadPagewordsDatabase(){
@@ -272,10 +262,8 @@ async function loadPagewordsDatabase(){
   for(let c of categories){
     let dbpath = './db2/'+c+"words.db"
     let db = getDB(dbpath)
-    console.log(dbpath)
 
     let docs = await getDocs(db)
-    console.log(docs)
 
     pagewordsDocs.push(...docs)
   }
@@ -291,75 +279,6 @@ async function loadPagewordsDatabase(){
   return "done"
 }
 
-function sortSearchHistoryByLetter(){
-  showSearchHistory("byletter")
-}
-
-function handleSearchHistoryClick(){
-  showSearchHistory(this)
-}
-
-function makeSearchHistoryActive(){
-  clearAllActiveLeftButtons()
-  //d3.select("#"+id).classed("activeleftbtn",true)
-  //button.classList style.classList.add("activeleftbtn")
-  //button.className += " activeleftbtn"
-
-  //Make lefthistoryol visible
-  d3.select("#lefthistoryol").style("display","block")
-
-  //hide wordlisttabs 
-  d3.select("#wordgroupdiv").style("display","none")
-  //hide wordlist 
-  d3.select("#leftol").style("display","none")
-}
-
-function clearAllActiveLeftButtons(){
-  let actives = document.querySelectorAll(".activeleftbtn")
-  if(actives.length>0) {
-    for(let btn of actives) btn.classList.remove("activeleftbtn")
-  }
-}
-
-function toggleDisplayWordlist(){
-  let wlbutton = document.querySelector("#wordlistbutton")
-  if(wlbutton.classList.contains('activeleftbtn')){//ie wordlist visible, hide it
-    hideWordlist()
-  }
-  else{
-    makeWordlistActive()
-  }
-}
-
-function hideWordlist(){
-  clearAllActiveLeftButtons()
-  //document.querySelector("#wordlistbutton").classList.remove("activeleftbtn")
-
-  //hide wordlist
-  d3.select("#leftol").style("display","none")
-  //hide wordtabs
-  d3.select("#wordgroupdiv").style("display","none")
-
-  //Make lefthistoryol visible
-  document.querySelector("#lefthistoryol").style.display = "block"
-  
-}
-
-function makeWordlistActive(){
-  clearAllActiveLeftButtons()
-  document.querySelector("#wordlistbutton").classList.add("activeleftbtn")
-
-  //show wordlist
-  d3.select("#leftol").style("display","block")
-  //show wordtabs
-  d3.select("#wordgroupdiv").style("display","block")
-
-  //Make lefthistoryol invisible
-  document.querySelector("#lefthistoryol").style.display = "none"
-  
-}
-
-
 function resetLeftolRigtholSearchDiv(){
   d3.select("#leftol").html("")
   d3.select("#wordgroupdiv").html("")
@@ -370,21 +289,7 @@ function resetLeftolRigtholSearchDiv(){
   d3.select("#sengroupdiv").html("")
 }
 
-function getBnText(){
-  let bntext = document.querySelector("#paliinput").value.trim()
-  bnsentence = bntext //assign to the global bnsentence
-  
-  let bnwords = bntext.split(" ")
-  if(bnwords.length > 1) {
-    //set the lengthiest word as bntext, to make quicker search
-    bntext = bnwords.sort((a,b)=>b.length-a.length)[0]
-  }
-
-  //if(!bntext || bntext.length <= 0) return
-  return bntext
-}
-
-function handleAllPagesPaliInput(type="pagebypage"){
+async function handleAllPagesPaliInput(){
   let t0 = performance.now()
 
   //clear previous result
@@ -407,117 +312,136 @@ function handleAllPagesPaliInput(type="pagebypage"){
   //get filelist
   if(pagewordsDocs.length <= 0){
     d3.select("#rightol").html("ডাটাবেজ লোড হচ্ছে। একটু অপেক্ষা করুন ...")
-    loadPagewordsDatabase().then(result=>{
-      d3.select("#rightol").html("ডাটাবেজ লোড হয়েছে।")
-      
-      processPagewordsDocs(pagewordsDocs)
-    })
-  }
-  else {
-    //console.log(bntext)
-    processPagewordsDocs(pagewordsDocs)
+    await loadPagewordsDatabase()
+    d3.select("#rightol").html("ডাটাবেজ লোড হয়েছে।")
   }
   
-  function processPagewordsDocs(docs){
-    console.log(docs[0])
-
-    let docindex = 0
-    
-    let wordlist = [], filelist=[]
-    processPageDoc(docindex, docs, wordlist,filelist)
-  }
-
-  function processPageDoc(docindex, docs, wordlist,filelist){
-    if(docindex < docs.length){
-      let doc = docs[docindex]
-
-      getDataFromPageDoc(doc).then(data=>{
-        if(data) {
-          //console.log(data)
-
-          wordlist.push(...data.wordlist)
-          filelist.push(data.filepath)
-        }
+  //then start processing
+  await processPagewordsDocsNew()
   
-        docindex++
-        processPageDoc(docindex, docs, wordlist,filelist)
+  async function processPagewordsDocsNew(){
+    let bnwords = bntext.split(" ")
+    if(bnwords.length>1)  await preparePageByPageSearch(bnwords)
+    else await prepareSingleWordSearch(bntext)
+  }
+}
+
+/**
+ * 
+ * @param {*} filtereddocs 
+ * @param {*} bntext 
+ * @returns wordlist {word:[filepath,...]}
+ */
+function getFilteredWordlist(filtereddocs, bntext){
+  let wordlist = {}
+  /**
+   * let wordlist = {
+   *  word1: [filepath, filepath, ...],
+   *  word2: [...]
+   * }
+   */
+  for(let fdoc of filtereddocs){
+    let pagewords = fdoc.pagewords.filter(dp=>dp.includes(bntext))
+    for(let fword of pagewords){
+      //check if fword already in wordlist
+      if(fword in wordlist) wordlist[fword].push(fdoc.filepath)
+      else wordlist[fword] = [fdoc.filepath]
+    }
+  }
+  return wordlist
+  
+}
+
+async function prepareSingleWordSearch(bntext){
+  let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => ff.includes(bntext)))
+  let wordlist = getFilteredWordlist(filtereddocs,bntext)
+  let groupnum = getNumberOfGroups(Object.keys(wordlist).length, WORDNUM)
+  showButtonsNew("#wordgroupdiv", groupnum, wordlist, bntext)
+}
+
+async function getFilteredFilelist(bnwords){
+  let filtereddocs = pagewordsDocs.filter(doc => bnwords.every(bw=>doc.pagewords.find(dp=>dp.includes(bw))))
+  let filelist = filtereddocs.map(fd => fd.filepath)
+  return filelist
+} 
+
+async function preparePageByPageSearch(bnwords){
+  let filelist = await getFilteredFilelist(bnwords)
+  //find categories
+  d3.select("#categorydiv").html("") //reset
+  let groupcatobjs = await getGroupedCatFilelist(filelist)
+  showCatButtons(groupcatobjs, bnwords)
+}
+
+function showCatButtons(groupcatobjs, bnwords){
+  let catlabels = ["মূল","অর্থকথা","টীকা","অন্যান্য"]
+  let cattags = ["mul","att","tik","ann"]
+
+  d3.select("#categorydiv").selectAll("button")
+      .data(catlabels)
+      .enter()
+      .append("button")
+      .classed("catbutton",true)
+      .attr("tag",function(d,i){return cattags[i]})
+      .attr("num",function(d,i){return groupcatobjs[cattags[i]].length})
+      .html(function(d,i){
+        return d+" <span style='font-weight:bold;'>"+groupcatobjs[cattags[i]].length+"</span>"
       })
-    }
-    else{
-      d3.select("#rightol").html("সার্চ সমাপ্ত।")
-      //console.log(wordlist)
-
-      if(wordlist.length > 0) {
-        handleListHere(wordlist, filelist,type,bntext, option)
-      }
-      else {
-        //console.log(bntext, wordlist)
-        console.log("no word found for "+bntext)
-      }
-
-      
-    }
-  }
-
-  
-  function getDataFromPageDoc(doc){
-    return new Promise((resolve, reject)=>{
-      let pwords = doc.pagewords
-      
-      pwords = getFilteredWordsOld(pwords, option, bntext)
-
-      if(pwords.length>0) {
-        let wordlist = []
+      .on("click", async function(d,i){
+        setElementSelected(this, "catbtnselected")
         
-        //let fileobj = {wordlist:pwords, filepath: doc.filepath}
+        //get subcategory file list
+        let cattag = this.getAttribute("tag")  
+        let catfiles = groupcatobjs[cattag]
 
-        for(let i=0; i<pwords.length; i++){
-          wordlist.push({word: pwords[i], filepath:doc.filepath})
+        await showSubcatButtons(cattag,catfiles, bnwords)
 
-          if(i == pwords.length-1) {
-            resolve({wordlist:wordlist,filepath:doc.filepath})
-          }
-        }
-      }
-      else resolve(null)
-    })
-  }
+      })
+    
+    clickFirstResultChild("categorydiv")
+
 }
-function getFilteredWords(pwords, option, bntext){
-  let bnwords = bntext.split(" ")
-  bnwords.map(w => w.trim())
-  bnwords = bnwords.filter(w => w.trim().length>0)
 
-  return new Promise((resolve,reject)=>{
-    let fpwords = []
-    let test = (a,b)=> a.every(an => getFiltered(b,an,option).length>0)
-  
-    if(test(bnwords, pwords)){
-      for(let i=0; i<bnwords.length;i++){
-        let bn = bnwords[i]
-        let spwords = getFiltered(pwords,bn,option)
-        fpwords.push(...spwords)
 
-        if(i == bnwords.length-1) resolve(fpwords)
-      }
+function areSeriallyPositioned(sentence, words){
+  let wordindexes = []
+
+  for(let i=0; i<words.length; i++){
+    let index = sentence.indexOf(words[i])
+    if(index == -1) return false
+
+    if(i == 0) wordindexes.push(index)
+    else{
+      let difference = index - wordindexes[i-1]
+      if(difference <= 0) return false
     }
-    else resolve([])
-  })
-}
-function getFiltered(array,word,option){
-  if(option == "includes") return array.filter(a=> a.includes(word))
-  else if(option == "startswith") return array.filter(a=> a.startsWith(word))
-  else if(option == "endswith") return array.filter(a=> a.endswith(word))
-  else if(option == "startends") return array.filter(a=> a.startsWith(word) || a.endsWith(word))
-  else return []
+  }
+  return true
 }
 
-function getFilteredWordsOld(pwords, option, bntext){
-  if(option == "includes") pwords = pwords.filter(w => w.includes(bntext))
-  else if(option == "startswith") pwords = pwords.filter(w => w.startsWith(bntext))
-  else if(option == "endswith") pwords = pwords.filter(w => w.endsWith(bntext))
-  else if(option == "startends") pwords = pwords.filter(w => w.startsWith(bntext) && w.endsWith(bntext))
-  return pwords
+/**
+ * 
+ * @param {*} filepath 
+ * @param {*} bnwords 
+ * @returns fndocs filtered pagedocs
+ */
+function getFilteredParaDocs(filepath, bnwords){
+  let db = getDB(filepath)
+  return new Promise((resolve,reject)=>{
+    db.find({},(err,ndocs)=>{
+      let fndocs = ndocs.filter(ndoc=>bnwords.every(bnword=>ndoc.content.includes(bnword)))
+
+      let div = document.createElement("div")
+      
+      for(let i=0; i<fndocs.length; i++){
+        let content = fndocs[i].content 
+        div.innerHTML = content
+        fndocs[i].content = div.innerText
+      }
+      resolve(fndocs)
+    })
+  })
+  
 }
 
 function getSearchOption(){
@@ -533,83 +457,10 @@ function getSearchOption(){
   return option
 }
 
-function processWordlist(uwordlist,type, bntext, option, savedata,source){
-  d3.select("#leftol").html("") //reset
-  d3.select("#wordgroupdiv").html("")
-  document.querySelector("#wordlistbutton").click() //to hide history and show wordlist
 
-  //console.log(uwordlist)
-  let groupnum = getNumberOfGroups(uwordlist.length, WORDNUM)
-
-  //console.log(groupnum+" for "+bntext)
-  showButtons("#wordgroupdiv", groupnum, uwordlist,type, bntext, option,savedata,source)
-  
-}
-function handleListHere(wordlist=[],filelist=[],type,bntext, option, source=""){
-  
-  //console.log(wordlist, filelist,type, bntext, source)
-  if(source == "history"){ //clear both leftol and rightol
-    //clear previous result
-    resetLeftolRigtholSearchDiv()
-    isResultSaved = true
-    d3.select("#paliinput").attr("value",bntext)
-  }
-
-  //Divide the programflow here
-  //for page by page search result
-  if(type == "pagebypage"){
-    let savedata = {filelist:filelist,type:type,bntext:bntext,word:""}
-    startGeneralProcessing(filelist, type, bntext,  option, source,savedata)
-  }
-  
-  //else show just the wordlist
-  else if(type == "wordlist"){
-    let savedata = {filelist:wordlist,type:type,bntext:bntext,word:""}
-    if(wordlist.length <= 0){
-      console.log("wordlist is 0!")
-      return
-    }
-
-    wordlist.sort((a,b)=>a.word.localeCompare(b.word, "bn"))
-    getUnifiedWordlist(wordlist).then(uwordlist =>{
-      //console.log(uwordlist)
-      processWordlist(uwordlist, type, bntext,  option,savedata,source)
-    })
-  }
-  
-}
-
-function getUnifiedWordlist(wordlist){
-  return new Promise((resolve,reject)=>{
-    let obj = {}
-    for(let i=0; i<wordlist.length; i++){
-      let word = wordlist[i].word
-      let filepath = wordlist[i].filepath
-      if(obj.hasOwnProperty(word)) obj[word].push(filepath)
-      else obj[word] = [filepath]
-
-      if(i == wordlist.length-1) {
-        let objarray = []
-        for(const[key,value] of Object.entries(obj)){
-          objarray.push({word:key, filelist:value})
-        }
-        resolve(objarray)
-      }
-    }
-  })
-}
-
-function startGeneralProcessing(filelist, type, bntext,  option, source,savedata){
-  //console.log(bntext, filelist.length, filelist[0])
-  let word = ""
-  setCatdivButtons(filelist, type, bntext, word, option,  source,savedata)
-}
-
-function showButtons(divid, groupnum, uwordlist, type, bntext, option,savedata,source){
-  //create an array of numbers, to be used on button text
+function showButtonsNew(divid,groupnum, wordlist,bntext){
   let dataarray = [...Array(groupnum+1).keys()].slice(1) 
-  //console.log(dataarray)
-  //console.log(savedata)
+  let wordlistkeys = Object.keys(wordlist).sort((a,b)=>a.localeCompare(b, "bn"))
 
   d3.select(divid).selectAll("button")
     .data(dataarray)
@@ -617,113 +468,57 @@ function showButtons(divid, groupnum, uwordlist, type, bntext, option,savedata,s
     .append("button")
     .attr("index",function(d){return d})
     .text(function(d){return d})
-    
+
     //on click show the tabwordlist
     .on("click",function(i){
-     // console.log("clicked") //this is just tabclick
-      setElementSelected(this, "wbtnselected")
-      //get the number 
-      let tabindex = parseInt(this.getAttribute("index"), 10)
+       setElementSelected(this, "wbtnselected")
+       //get the number 
+       let tabindex = parseInt(this.getAttribute("index"), 10)
+       let tabwordlist = getListForTab(tabindex-1, wordlistkeys, WORDNUM)
+       showTabWordsNew(tabwordlist, wordlist,bntext)
+     })
 
-      let tabwordlist = getListForTab(tabindex-1, uwordlist, WORDNUM)
-      //console.log(tabwordlist)
-      showTabWords(tabwordlist, type, bntext, option,savedata,source)
-    })
-
-  let firstbutton = document.querySelector(divid).firstChild
-  if(firstbutton && firstbutton.tagName == "BUTTON") firstbutton.click()
-
-  //save result here after buttons loading
-  //so that it won't happen to save every time you click a numbered button!
-  if(!isResultSaved)saveSearchResult(savedata.filelist,savedata.bntext,option, savedata.type).then(newdoc=>{
-    console.log("result saved for "+bntext)
-    isResultSaved = true //set to true to avoid duplicate saving
-    
-  }).catch(err => console.log(err))
+    let firstbutton = document.querySelector(divid).firstChild
+    if(firstbutton && firstbutton.tagName == "BUTTON") firstbutton.click()
 }
+
 
 function getListForTab(tabindex, list, NUM){
   let findex = tabindex * NUM
   let lindex = (tabindex+1) * NUM //excluding // as will be used in slice()
   if(lindex >= list.length) lindex = list.length
-  console.log(tabindex, findex, lindex)
-  
   return list.slice(findex, lindex)
 }
-
-function showTabWords(tabwordlist, type, bntext, option,savedata,source){
+function showTabWordsNew(tabwordlist, wordlist, bntext){
   let leftol = d3.select("#leftol").html("") //reset
    
   if(tabwordlist.length == 0) return
-
-  //console.log(tabwordlist[0])
-
-  //get words for tabindex
-  let datalist = tabwordlist.map(w => w.word)
-  //console.log(datalist)
-
   leftol.selectAll("li")
-    .data(datalist)
+    .data(tabwordlist)
     .enter()
     .append("li")
     .attr("index", function(d,i){return i})
     .classed("wordli", true)
     .html(function(d){return d})
 
-    .on("click",function(e, i){
-      //console.log("clicked!")
+    .on("click", async function(e, i){
       setElementSelected(this, "wordliselected")
 
       let index = this.getAttribute("index")
 
       clearRightDiv()
-      let word = datalist[index]
-      let filelist = tabwordlist[index].filelist
-      
-      let newsource = "tabclick"
-      setCatdivButtons(filelist, type, bntext, word, option, newsource,savedata)
+      let word = tabwordlist[index]
+      let filelist = wordlist[word]
+
+      //reset catdiv
+      d3.select("#categorydiv").html("") //reset
+      let groupcatobjs = await getGroupedCatFilelist(filelist)
+      showCatButtons(groupcatobjs, [word])
     })
+
+  let firstli = document.querySelector("#leftol").firstChild
+  if(firstli) firstli.click()
 }
-
-
-function setCatdivButtons(filelist, type, bntext, word="", option,  source,savedata){
-  //console.log("catdiv input: "+word+", filelist sample +", filelist[0])
-  //let savedata = {filelist:filelist,type:type,bntext:bntext,word:word}
-
-  d3.select("#searchfilterdiv").style("display","flex")
-  d3.select("#categorydiv").html("") //reset
-
-  getGroupedCatFilelist(filelist).then(groupcatobjs=>{
-    let catlabeldata = ["মূল","অর্থকথা","টীকা","অন্যান্য"]
-    let cattagdata = ["mul","att","tik","ann"]
-
-    //console.log(senobjs)
-    //add category buttons
-    d3.select("#categorydiv").selectAll("button")
-      .data(catlabeldata)
-      .enter()
-      .append("button")
-      .classed("catbutton",true)
-      .attr("tag",function(d,i){return cattagdata[i]})
-      .attr("num",function(d,i){return groupcatobjs[cattagdata[i]].length})
-      .html(function(d,i){
-        return d+" <span style='font-weight:bold;'>"+groupcatobjs[cattagdata[i]].length+"</span>"
-      })
-      .on("click",function(d,i){
-        setElementSelected(this, "catbtnselected")
-
-        let tag = this.getAttribute("tag")
-        //console.log(tag, groupcatobjs[tag])
-        //console.log("show subcat buttons! for "+tag)
-        
-        showSubcatButtons(tag,groupcatobjs[tag], type, bntext, word, option, source, savedata)
-      })
-      //clickFirstResultCatButton()
-      clickFirstResultChild("categorydiv")
-  })
-  
-}
-
 
 function clickFirstResultChild(divid){
   let children = document.querySelector("#"+divid).childNodes
@@ -736,15 +531,12 @@ function clickFirstResultChild(divid){
     
   }
 }
-
-function showSubcatButtons(cattag, catfiles, type, bntext, word,  option, source, savedata){
+async function showSubcatButtons(cattag, catfiles, bnwords){
   let subcatdivid = "subcategorydiv"
   d3.select("#"+subcatdivid).html("") //reset
   d3.select("#sengroupdiv").html("")
   d3.select("#rightol").html("")//
 
-
-  //console.log(cattag, catsenobjs)
   let subcatdata = ["বিনয়","সুত্র","অভিধর্ম"]
   let subcattagdata = ["vin","sut","abh"]
 
@@ -753,9 +545,8 @@ function showSubcatButtons(cattag, catfiles, type, bntext, word,  option, source
     subcattagdata = ["vis","bya","ann"]
   }
 
-  //get subcatsenobjs
-  getGroupedSubcatFilelist(cattag, catfiles).then(scfileobjs=>{ //{vin:[{pageid,filepath}],sut,abh,vis,bya,ann}
-    d3.select("#subcategorydiv").selectAll("button")
+  let scfileobjs = await getGroupedSubcatFilelist(cattag,catfiles)
+  d3.select("#subcategorydiv").selectAll("button")
     .data(subcatdata)
     .enter()
     .append("button")
@@ -765,288 +556,155 @@ function showSubcatButtons(cattag, catfiles, type, bntext, word,  option, source
     .html(function(d,i){
       return d+" <span style='font-weight:bold;'>"+scfileobjs[subcattagdata[i]].length+"</span>"
     })
-    .on("click",function(d,i){
+    .on("click", async function(d,i){
       setElementSelected(this, "subcatbtnselected")
-      let tag = this.getAttribute("tag")
-      //console.log(tag, scfileobjs[tag])
-      //console.log("show filegroupbuttons! for "+tag)
+      let subcattag = this.getAttribute("tag")
       
       //show filegroupbuttons
-      let groupnum = getNumberOfGroups(scfileobjs[tag].length, FILENUM)
-      showFilegroupButtons("sengroupdiv", groupnum, scfileobjs[tag], type, bntext,  option, word,savedata, source)
+      let groupnum = getNumberOfGroups(scfileobjs[subcattag].length, FILENUM)
+      showFilegroupButtons(groupnum, "sengroupdiv", scfileobjs[subcattag], bnwords)
     })
 
     clickFirstResultChild(subcatdivid)
-  })
 }
 
 
-function showFilegroupButtons(divid, groupnum, scobjfilelist, type, bntext,  option,  word,savedata, source){
-  d3.select("#"+divid).html("") //reset
+
+function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
+  d3.select("#"+subcatdivid).html("") //reset
   //create an array of numbers, to be used on button text
   let dataarray = [...Array(groupnum+1).keys()].slice(1) 
 
-  d3.select("#"+divid).selectAll("button")
+  d3.select("#"+subcatdivid).selectAll("button")
     .data(dataarray)
     .enter()
     .append("button")
     .attr("index",function(d){return d})
     //.attr("num",function(d,i){return scfilelist[subcattagdata[i]].length})
     .text(function(d){return d})
-    
-    //on click show the tabwordlist
-    .on("click",function(i){
+    .on("click", async function(i){
       setElementSelected(this, "senbtnselected")
       d3.select("#rightol").html("") //reset senlist
 
       //get the number 
       let tabindex = parseInt(this.getAttribute("index"), 10)
-
-      //here sorting should be by pageid or filename
-      //scfilelist.sort((a,b)=>a.filepath.localeCompare(b.filepath,"en", {numeric:true}))
       scobjfilelist.sort((a,b)=>a.pageid.localeCompare(b.pageid, "en", {numeric:true}))
       
       //separate only filelist
       let scfilelist = scobjfilelist.map(w => w.filepath)
       let tabfilelist = getListForTab(tabindex-1, scfilelist, FILENUM)
-      
-      //
-      if(type == "pagebypage") processTabFiles(tabfilelist,type, bntext, option, savedata, source)
-      else if(type == "wordlist") processTabFiles(tabfilelist, type,word, option, savedata, source)
+
+      let tabsenlist = await getTabSenList(tabfilelist, bnwords)
+      if(tabsenlist.length <= 0){
+        //click on the next sibling
+        let nextbutton = this.nextElementSibling
+        if(nextbutton && nextbutton.tagName == "BUTTON") nextbutton.click()
+       
+      }
+      else showTabSentences(tabsenlist, bnwords)
     })
-    //click the first button
-  let firstbutton = document.querySelector("#"+divid).firstChild
+
+  let firstbutton = document.querySelector("#"+subcatdivid).firstChild
   if(firstbutton && firstbutton.tagName == "BUTTON") firstbutton.click()
-  
 }
 
-function processTabFiles(tabfilelist,type, bntext, option, savedata, source){
-  //console.log(bntext)
-  let fileindex = 0
+async function getTabSenList(tabfilelist, bnwords){
+  
+  //get tab sentences
   let tabsenlist = []
 
-  handleFile(fileindex)
-  function handleFile(fileindex){
-    if(fileindex<tabfilelist.length){
-      let filepath = tabfilelist[fileindex].filepath
-      let cat = tabfilelist[fileindex].cat
-      let subcat = tabfilelist[fileindex].subcat
+  for(let tf of tabfilelist){
+    let filepath = tf.filepath
+    let cat = tf.cat
+    let subcat = tf.subcat
 
-      //get bookname and pagename
-      let fp = filepath.replace("./db2/pages/","")
-      fp = fp.split("/")
-      let pageid = fp[fp.length-1]
-      let bookid = pageid.slice(0, -2)
-      //console.log(pageid, bookid)
-      let booktitle = ""
-      if(bookidlist.includes(bookid)){
-        let bookindex = bookidlist.indexOf(bookid)
-        booktitle = booktitlelist[bookindex]
-      }
-      let pagetitle = getPageTitle(bookid, pageid)
+    //get bookname and pagename
+    let {booktitle,bookid,pageid} = getBookTitle(filepath)
+    let pagetitle = getPageTitle(bookid, pageid)
+    let paradocs = await getFilteredParaDocs(filepath, bnwords)
 
+    for(let pdoc of paradocs){
+      let sentences = textToSentences(pdoc.content)
+      sentences = sentences.filter(s => s && areSeriallyPositioned(s, bnwords))
       
-    let db = getDB(filepath)
-      db.find({},(err,ndocs)=>{
-
-        ndocs.sort((a,b)=> a.paraid-b.paraid)
-        getFilteredDocs(ndocs, bntext).then(docs=>{
-          let docindex = 0
-          handleDoc(docindex)
-  
-          function handleDoc(docindex){
-            if(docindex < docs.length){
-              let doc = docs[docindex]
-              let doctextinfo = getContainingTextInfo(bntext, doc)
-  
-              if(doctextinfo) {
-                getSenobjsNew(filepath, doctextinfo, type, bntext, option, cat, subcat, booktitle, pagetitle).then(docsenobjs=>{
-                  
-                  if(docsenobjs.length> 0) tabsenlist.push(...docsenobjs)
-  
-                  docindex++
-                  handleDoc(docindex)
-                })
-              }
-              else{
-                docindex++
-                console.log(docindex, docs.length, "calling again!")
-                handleDoc(docindex)
-              }
-            }
-            else{
-              fileindex++
-              handleFile(fileindex)
-            }
-          }
+      for(let sen of sentences){
+        tabsenlist.push({
+          sentence: sen, filepath:filepath, booktitle:booktitle, pagetitle:pagetitle,
+          paraid: pdoc.paraid, paradocid:pdoc._id,category:cat, subcategory:subcat
         })
-        
-      })
-    }
-    else{
-      //console.log("all sen objs for "+word)
-      showTabSentences(tabsenlist,type,savedata, source,bntext, option)
-    }
-  }
-}
-
-function getFilteredDocs(docs, word){
-  return new Promise((resolve,reject)=>{
-    let fdocs = []
-    for(let i=0; i<docs.length;i++){
-      let doc = docs[i]
+      }
       
-      if(dochas(word, doc)) fdocs.push(doc)
-
-      if(i == docs.length-1) resolve(fdocs)
     }
-  })
+      
+  }
+
+  return tabsenlist
 }
+function textToSentences(text){
+  const splitters = [';',';','‘','’','।','॥','!','?','–',"–"]
+  let sentences = splitMulti(text, splitters)
+  sentences =  sentences.map(s=> s.trim()).filter(e => e) //filter and keep only those that return true, excluding null
+  return sentences
 
-function showTabSentences(tabsenlist,type,savedata, source,bntext, option){
+  function splitMulti(str, tokens, tempSplitter="_"){
+    //var tempChar = tokens[0]; // We can use the first token as a temporary join character
+    for(var i = 1; i < tokens.length; i++){
+        str = str.split(tokens[i]).join(tokens[i]+tempSplitter)
+    }
+    str = str.split(tempSplitter)
+    return str
+}
+}
+function showTabSentences(tabsenlist, bnwords){
   let rightol = d3.select("#rightol").html("") //reset
-   
   if(tabsenlist.length == 0) return
-
-  //console.log(tabsenlist)
-
-  //get sentences for tabindex
-  let datalist = tabsenlist.map(w => w.sentence)
-  let paraidlist = tabsenlist.map(w => w.paraid)
-  let docidlist = tabsenlist.map(w => w.docid)
-  //book title list
-  let btlist = tabsenlist.map(w => w.booktitle)
-  let ptlist = tabsenlist.map(w => w.pagetitle)
-  //console.log(datalist)
-
+  //let sentencelist = tabsenlist.map(t=>t.sentence)
+  //let pagetitlelist = 
   rightol.selectAll("li")
-    .data(datalist)
+    .data(tabsenlist)
     .enter()
     .append("li")
     .attr("index", function(d,i){return i})
     .classed("senli", true)
-    //.html(function(d,i){return getInnerHTML(d,i,btlist,ptlist,type,bntext)})
-    .html(function(d,i){return getInnerHTML(d,type,bntext)})
+    .html(function(d,i){return getInnerHTML(d.sentence, bnwords)})
+
+    //add span to html for onclick link copying 
     .append("span")
     .classed("ppsspan", true)
-    .html(function(d,i){return btlist[i]+" => "+ptlist[i]})
+    .html(function(d,i){return " "+ d.booktitle+" => "+d.pagetitle})
 
-    //handle onclick
+    //handle onclick on the span
     .on("click",function(d,i){
       let index = parseInt(this.parentElement.getAttribute("index"))
-      //console.log(i, index)
-      //
-      console.log(tabsenlist[index])
-      
-      let filepath = tabsenlist[index].filepath
       let senobjstring = JSON.stringify(tabsenlist[index])
       //copy filepath to clipboard
       electron.clipboard.writeText(senobjstring)
     })
-
-  //console.log(isResultSaved)
-  //After it, save the searchResult for pagebypage type
-  //for wordlist type, you already saved it after showing wordlist
-  if(!isResultSaved)saveSearchResult(savedata.filelist,savedata.bntext,option, savedata.type).then(newdoc=>{
-    console.log("result saved for "+bntext)
-    isResultSaved = true //set to true to avoid duplicate saving
-    showSearchHistory()
-  }).catch(err => console.log(err))
 }
 
-function setClipboard(text){
-  new Promise((resolve, reject)=>{
-    let type = "text/plain"
-    let blob = new Blob([text], {type})
-    let data = [new ClipboardItem({[type]:blob})]
-  
-    navigator.clipboard.writeText(write(data).then(
-      function(){//on done
-        resolve("success")    
-      }, 
-      function(){
-        reject("error copying data to clipboard!")    
-      }
-    ))
-  })
-}
-
-function getInnerHTML(d,type,bntext){
-  //bntext is actually word in wordlist, but bntext in pagebypage
-  //so treat them differently
-  //console.log("after replacement: ", d)
-  //console.log(type)
-  if(type == "wordlist") d = d.replaceAll(bntext, "<b>"+bntext+"</b>")
-  else if(type == "pagebypage"){
-    let words = d.split(" ")
-    //console.log(words)
-    let matches = words.filter(w => w.includes(bntext))
-    //console.log(matches)
-    let uniquematches = [...new Set(matches)]
-    //console.log(matches)
-    
-    uniquematches.forEach(um => d = d.replaceAll(um, "<b>"+um+"</b>"))
+function getBookTitle(filepath){
+  let fp = filepath.replace("./db2/pages/","")
+  fp = fp.split("/")
+  let pageid = fp[fp.length-1]
+  let bookid = pageid.slice(0, -2)
+  let booktitle = ""
+  if(bookidlist.includes(bookid)){
+    let bookindex = bookidlist.indexOf(bookid)
+    booktitle = booktitlelist[bookindex]
   }
-  //console.log("after replacement: ", d)
-  
-  return d
+  return {booktitle:booktitle,bookid:bookid,pageid:pageid}
 }
 
-function getSenobjsNew(filepath, doctextinfo,type, word, option, category, subcategory, booktitle, pagetitle){
-  return new Promise((resolve, reject)=>{
-    let doctext = doctextinfo.text
-    
-    let senobjs = []
-    let tarr = doctext.split("।")
 
-    for(let i=0; i<tarr.length; i++){
-      let sen = tarr[i]
-      let senobj = getSenObjByOption(sen)
-      
-      
 
-      if(senobj){
-          //also add paraid and docid
-          senobj.paraid = doctextinfo.paraid
-          senobj.docid = doctextinfo.docid
-          senobjs.push(senobj)
-      } 
-      
-      if(i == tarr.length-1) resolve(senobjs)
-    }
-  })
+function getInnerHTML(sentence,bnwords){
+  let words = sentence.split(" ")
+  let matches = words.filter(w => bnwords.find(bword => w.includes(bword)))
+  let uniquematches = [...new Set(matches)]
   
-  function getSenObjByOption(sen){
-    let senobj = {
-      filepath: filepath, word:word, sentence:sen+"।",
-      category:category, subcategory:subcategory, 
-      booktitle:booktitle, pagetitle:pagetitle
-    }
-    //console.log(word, type)
-    let words = []
-    if(type == "pagebypage") words = sen.split(" ").filter(w => w.includes(word))
-    else words = sen.split(" ").filter(w => w == word) 
-    
-    //console.log(sen.split(" "))
-
-    if(words.length == 0) {
-      //try includes
-      words = sen.split(" ").filter(w => w.includes(word))
-      if(words.length == 0) senobj = null
-      //else senobj will return with the first assigned value
-    }
-    
-    return senobj
-  }
-}
-
-function getContainingTextInfo(word, doc){
-  //console.log(doc)
-  let div = document.createElement("div")
-  div.innerHTML = doc.content
-  let text = div.innerText
-  if(text.includes(word))  return {text:text,paraid:doc.paraid,docid:doc._id}
-  else return null
+  uniquematches.forEach(um => sentence = sentence.replaceAll(um, "<b>"+um+"</b>"))
+  
+  return sentence
 }
 
 function getGroupedSubcatFilelist(cattag, catfiles){
@@ -1087,8 +745,6 @@ function getGroupedCatFilelist(filelist){
     
     for(let i=0; i<filelist.length; i++){
       let dbpath = filelist[i]
-      //console.log(dbpath)
-
       let fp = dbpath.replace("./db2/pages/","")
       fp = fp.split("/")
       let category = fp[0], subcategory = fp[1]
@@ -1099,24 +755,10 @@ function getGroupedCatFilelist(filelist){
       else if(category == "tika") obj.tik.push({cat:category,subcat:subcategory,filepath:dbpath})
       else if(category == "anno") obj.ann.push({cat:category,subcat:subcategory,filepath:dbpath})
 
-      if(i == filelist.length-1){
-        //console.log(obj)
-        resolve(obj)
-      }
+      if(i == filelist.length-1) resolve(obj)
     }
   })
 }
-
-
-
-
-function dochas(word, doc){
-  let div = document.createElement("div")
-  div.innerHTML = doc.content
-  return div.innerText.includes(word)
-}
-
-
 
 /**
  * membnum: number of items in every group
@@ -1131,39 +773,6 @@ function getNumberOfGroups(listlength, membnum){
 }
 
 
-function isPathFile(path){
-  return FS.existsSync(path) && FS.lstatSync(path).isFile()
-  
-}
-function isPathFolder(path){
-  return FS.existsSync(path) && FS.lstatSync(path).isDirectory()
-  
-}
-
-
-function saveSearchResult(filelist, bntext, option, type){
-  return new Promise((resolve,reject)=>{
-    let timestamp = Date.now()
-    let doc = {searchterm:bntext, option:option, searchtype:type, timestamp:timestamp, note:""}
-    console.log(filelist)
-
-    let db = getDB(shistorylistdbpath)
-    db.insert(doc, (err, newdoc)=>{
-      if(newdoc){
-        let filepath = path.join(shistoryfolder, newdoc._id)
-        let fpdb = getDB(filepath)
-        fpdb.insert({filelist: filelist}, (err, ndoc)=>{
-          //console.log(ndoc)
-          if(ndoc)resolve(ndoc)
-
-          else reject("failed to save result in filelist for "+bntext+", type: "+type)
-        })
-        
-      }
-      else reject("failed to save result in shlist for "+bntext+", type: "+type)
-    })
-  })
-}
 
 function setElementSelected(element,selectedclass){
   d3.selectAll("."+selectedclass)
@@ -1178,353 +787,15 @@ function clearRightDiv(){
   document.querySelector("#rightol").innerHTML = ""
 }
 
-
-function compareBNTexts(a,b){
-    return a.localeCompare(b, "bn")
-}
-
-function showSearchHistory(button = null){
-  
-  makeSearchHistoryActive()
-  let sorttype = null
-  if(button) {
-    button.classList.add("activeleftbtn") //make it active
-    sorttype = button.getAttribute("sorttype") 
-  }
-
-  //get search objects from db
-  let db = getDB(shistorylistdbpath) 
-  
-  db.find({}, (err, docs)=>{
-    //console.log(docs[10], sorttype)
-    let lefthistoryol = document.querySelector("#lefthistoryol")
-    lefthistoryol.innerHTML = ""
-    //[{fielist,note,searchterm,searchtype,timestamp}]
-    let starred = docs.filter(d => d.hasOwnProperty("starred"))
-    if(starred.length>0) {
-      //starred.sort((a,b)=>a.timestamp-b.timestamp).reverse() 
-
-      if(sorttype && sorttype == "letter") starred.sort((a,b)=> a.searchterm.localeCompare(b.searchterm, "bn") )
-      else starred.sort((a,b)=>a.timestamp-b.timestamp).reverse() 
-    }
-
-    let nonstarred = docs.filter(d => !d.hasOwnProperty("starred"))
-    //console.log(nonstarred)
-    if(nonstarred.length>0){
-      if(sorttype && sorttype == "letter") nonstarred.sort((a,b)=> a.searchterm.localeCompare(b.searchterm, "bn") )
-      else nonstarred.sort((a,b)=>a.timestamp-b.timestamp).reverse() 
-
-      //console.log(nonstarred, "after")
-    } 
-
-    //reassemble together
-    docs = [...starred, ...nonstarred]
-
-    let date = "" //for header date
-    docs.forEach(doc=>{
-      let lidate = getDateTimeOnlyFromTimeStamp(doc.timestamp)
-      if(date !== lidate){
-        date = lidate //assign new header date!
-
-        let p = document.createElement("p")
-        p.style.margin = "0px"
-        p.style.padding = "0px"
-        p.style.fontSize = "12px"
-        p.style.fontWeight = "bold"
-        p.style.color = "red"
-
-        p.innerHTML = lidate
-        lefthistoryol.appendChild(p)
-      }
-      let li = document.createElement("li")
-      if(doc.searchtype == "pagebypage") li.innerHTML = doc.searchterm + " [pp] "
-      else if(doc.searchtype == "wordlist") li.innerHTML = doc.searchterm + " [wl] "
-      
-      let span = "<span class='leftlidate'> "+ getDateTimeFromTimeStamp(doc.timestamp)+"</span>"
-      li.innerHTML += span
-      
-      li.classList = "leftli"
-      //also add starred class if found
-      //it is for highlighting projects
-      if(doc.hasOwnProperty("starred")) li.classList.add("starred")
-      
-      li.title = doc.note
-      lefthistoryol.appendChild(li)
-
-      li.onclick = ()=>{
-        setLeftLiActive(li)
-        let source = "history"
-        
-        //actually either filelist or wordlist is stored as filelist in the doc
-        //so retrieve it
-        
-        //get filelist
-        let filepath = path.join(shistoryfolder, doc._id)
-        if(fileExists(filepath)){
-          let fdb2 = getDB(filepath)
-          fdb2.find({}, (err, mdocs)=>{
-            //console.log(mdocs)
-            let fdoc = mdocs[0]
-            //console.log(fdoc)
-            let wordlist = [], filelist = []
-            let type = doc.searchtype
-            
-            //console.log(fdoc.filelist)
-            
-            if(type == "pagebypage") filelist = fdoc.filelist
-            else if(type == "wordlist") wordlist = fdoc.filelist
-
-            let bntext = doc.searchterm
-            let option = ""
-            if(doc.hasOwnProperty("option")) option = doc.option
-            
-           // console.log(filelist, wordlist)
-
-            handleListHere(wordlist, filelist,type, bntext, option, source)
-          })
-        }
-        else {
-          alert("filepath doesn't exist!")
-          return
-        }
-      }
-
-      li.oncontextmenu = ()=>{
-        let br = document.createElement("br")
-        li.appendChild(br)
-
-        let button3 = document.createElement("button")
-        button3.innerHTML = "Note"
-        li.appendChild(button3)
-
-        let button = document.createElement("button")
-        button.innerHTML = "delete"
-        li.appendChild(button)
-
-        let button2 = document.createElement("button")
-        button2.innerHTML = "cancel"
-        li.appendChild(button2)
-
-        let button4 = document.createElement("button")
-        if(doc.hasOwnProperty("starred")) {
-          button4.innerHTML = "*-"
-          button4.setAttribute("starred",true)
-          button4.title = "Remove star"
-        }
-        else{
-          button4.innerHTML = "*"
-          button4.setAttribute("starred",false)
-          button4.title = "Add star"
-        }
-        li.appendChild(button4)
-
-        button.onclick = (e)=>{
-          e.stopPropagation()
-          let con = confirm("Are you sure?")
-          
-          if(con) deleteSearchHistoryItem(doc._id).then(result=>{
-            clearRightDiv()
-            showSearchHistory()
-          }).catch(err=>console.log(err))
-        }
-
-        button2.onclick = (e)=>{
-          e.stopPropagation()
-          removeAllEls(li, br, button, button2, button3, button4)
-        }
-        //edit note
-        button3.onclick = (e)=>{
-          e.stopPropagation()
-          
-          let br = document.createElement("br")
-          li.appendChild(br)
-
-          //Add an input area
-          let textarea = document.createElement("textarea")
-          textarea.cols = "16"
-          textarea.rows = "6"
-          textarea.value = doc.note
-          textarea.style.fontFamily = "AdorshoLipi"
-          li.appendChild(textarea)
-          
-          textarea.onclick = (e)=>{
-            e.stopPropagation()
-          }
-
-          //Add an ok button
-          let ok = document.createElement("button")
-          ok.innerHTML = "OK"
-          li.appendChild(ok)
-
-          let clear = document.createElement("button")
-          clear.style.backgroundColor = "red"
-          clear.style.color = "white"
-          clear.innerHTML = "X"
-          li.appendChild(clear)
-
-          ok.onclick = (e)=>{
-            e.stopPropagation()
-            updateSearchHistoryNote(doc._id, textarea.value).then(result =>{
-              //and then update li title
-              li.title = textarea.value
-              doc.note = textarea.value
-
-              //then remove everything
-              li.removeChild(textarea)
-              li.removeChild(ok)
-              li.removeChild(clear)
-              li.removeChild(br)
-              
-            }).catch(err=>console.log(err))
-          }
-
-          clear.onclick = (e)=>{
-            e.stopPropagation()
-            
-            li.removeChild(textarea)
-            li.removeChild(ok)
-            li.removeChild(clear)
-            li.removeChild(br)
-          }
-
-        }
-        button4.onclick = (e)=>{
-          e.stopPropagation()
-          let starred = button4.getAttribute("starred")
-          handleStar(db, doc, starred)
-        }
-
-      }
-
-      function removeAllEls(li, br, button, button2, button3, button4){
-        li.removeChild(br)
-        li.removeChild(button)
-        li.removeChild(button2)
-        li.removeChild(button3)
-        li.removeChild(button4)
-      }
-    })
-
-  })
-
-  function setLeftLiActive(li){
-    let preselectli = document.querySelector(".activeleftli")
-    if(preselectli) preselectli.classList.remove("activeleftli")
-    li.classList.add("activeleftli")
-  }
-}
-
-function handleStar(db, doc, starred){ //starred = true/false
-  let docid = doc._id
-  delete doc._id
-  let action = ""
-  //console.log(starred)
-  
-  //get doc
-  if(starred == "true"){ //removed star
-    delete doc.starred
-    action = "removing star from "
-    console.log(action)
-  }
-  else{
-    doc.starred = true
-    action = "adding star to "
-    console.log(action)
-  }
-
-  //console.log(action)
-
-  db.update({_id: docid}, doc, (err, numReplaced)=>{
-    if(numReplaced){
-      //console.log(action+" history item: "+doc.searchterm+" successful.")
-      showSearchHistory()
-    }
-    else {
-      console.log(err)
-      console.log(action+" history item: "+doc.searchterm+" failed.")
-    }
-  })
-}
-
-function updateSearchHistoryNote(docid, note){
-  return new Promise((resolve,reject)=>{
-    let db = getDB(shistorylistdbpath)
-    db.update({_id: docid}, {$set: {note: note}}, {}, (err, numReplaced)=>{
-      if(numReplaced) resolve("success")
-      else reject("failed to replace")
-    })
-  })
-}
-function deleteSearchHistoryItem(docid){
-  return new Promise((resolve, reject)=>{
-    let db = getDB(shistorylistdbpath)
-    db.remove({_id:docid},{},(err, numRemoved)=>{
-      if(numRemoved) {
-        let fpath = path.join(shistoryfolder, docid)
-        if(fileExists(fpath)){
-          FS.unlink(fpath,function(err){
-            if(err) reject("failed to delete history item file!")
-            resolve("success")
-          })
-        }
-      }
-      else{
-        reject("failed to remove history item doc!")
-      }
-    })
-  })
-  
-}
-function getDateTimeFromTimeStamp(timestamp){
-  let today = new Date(timestamp)
-  //the code below also takes care of timezone difference
-  //isostring returns like this:  2021-08-05T09:40:04.468Z
-  //so to get date and time split at dot(.)
-  //to get date only, split at T 
-  let datestring = new Date(today.getTime() - (today.getTimezoneOffset()*60000)).toISOString().split(".")[0]
-  return datestring
-}
-function getDateTimeOnlyFromTimeStamp(timestamp){
-  let today = new Date(timestamp)
-  //the code below also takes care of timezone difference
-  //isostring returns like this:  2021-08-05T09:40:04.468Z
-  //so to get date and time split at dot(.)
-  //to get date only, split at T 
-  let datestring = new Date(today.getTime() - (today.getTimezoneOffset()*60000)).toISOString().split("T")[0]
-  return datestring
-}
-
 function getDB(dbpath){
-    let db
+  let db
 
-    if(previous.dbpath == dbpath){ //check previous dbpath if already opened
-        db = previous.db
-        return db
-    }
-    else{
-        let db = getDBFromPath(dbpath)
-        previous.dbpath = dbpath //store for later check
-        previous.db = db
-        return db
-    }
-
-    function getDBFromPath(filepath){
-        const db = new Datastore({filename: filepath})
-        db.loadDatabase()
-        return db
-    }
+  if(dbpath in dbs) return dbs[dbpath]
+  else {
+    const db = new Datastore({filename: dbpath})
+    db.loadDatabase()
+    dbs[dbpath] = db
+    return db
+  }
 }
 
-function fileExists(filepath){
-    try {
-        if (FS.existsSync(filepath)) {
-          return true
-        }
-        else return false
-    } catch(err) {
-        console.error(err)
-        return false
-    }
-}
-
-ipcrenderer.on("show-search-history", showSearchHistory)
