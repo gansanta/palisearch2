@@ -143,6 +143,18 @@ function attachListners(){
 
       //startUpdatingPageParaSen()
     }
+
+    document.onkeydown = (e)=>{
+      //if(e.key === 'Escape') UIM.hideAllFloatings()
+
+      //set ctrl+n for opening new window
+      //else 
+      if(e.ctrlKey && e.key == "n"){ 
+        let attributes = null
+        ipcRenderer.send("opennewwindow",attributes)
+      }
+      
+  }
 }
 
 function getPaliWordFolder(subfolderstartindex, fileindex, docindex){

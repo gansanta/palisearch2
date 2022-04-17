@@ -7,8 +7,8 @@ let splashwindow, indexwindow, palisearchwindow
 function createIndexWindow () {
   indexwindow = new BrowserWindow({
     titleBarStyle: 'hidden',
-    width: 800,
-    height: 600,
+    width: 1264,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true
@@ -19,12 +19,31 @@ function createIndexWindow () {
 
   indexwindow.loadFile('index.html')
 
-  //setMenu()
+  setMenu()
   /**
    * indexwindow.once('ready-to-show', ()=>{
     indexwindow.show()
   })
    */
+}
+function createWindow(attributes=null,filename="index.html") {
+  let window = new BrowserWindow({
+      height: 800,
+      width: 1264,
+      icon: path.join(__dirname, 'images/picon.png'),
+      backgroundColor: '#606061',
+      webPreferences: {
+          nodeIntegration: true,
+          webviewTag: true,
+          contextIsolation: false,
+          enableRemoteModule: true
+      }
+  })
+  window.loadURL('file://' + path.join(__dirname, filename))
+
+  setMenu()
+
+  return window
 }
 function setMenu(window){
   var menu = Menu.buildFromTemplate([
@@ -115,10 +134,14 @@ app.on('window-all-closed', () => {
   }
 })
 
-const ipc = require('electron').ipcMain
-ipc.on("close-splash-window", (event, arg)=>{
+const ipcMain = require('electron').ipcMain
+ipcMain.on("close-splash-window", (event, arg)=>{
   setTimeout(handleSplashCloseSignal, 3000)
 })
+ipcMain.on('opennewwindow',(ipcevent, attributes)=>{
+  createWindow(attributes)
+})
+
 
 function handleSplashCloseSignal(){
   splashwindow.close()
