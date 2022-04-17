@@ -140,7 +140,9 @@ ipcMain.on("close-splash-window", (event, arg)=>{
 })
 ipcMain.on('opennewwindow',(ipcevent, attributes)=>{
   createWindow(attributes)
+  
 })
+
 
 
 function handleSplashCloseSignal(){

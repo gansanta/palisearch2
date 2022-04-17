@@ -112,7 +112,7 @@ window.onload = ()=>{
     palisen = document.querySelector("#palisen")
     palisentence = document.querySelector("#palisentence")
 
-
+  console.log("hekki")
     attachListners()
     //loadEngBNDB()
 
@@ -151,6 +151,7 @@ function attachListners(){
       //else 
       if(e.ctrlKey && e.key == "n"){ 
         let attributes = null
+        console.log("new window")
         ipcRenderer.send("opennewwindow",attributes)
       }
       
