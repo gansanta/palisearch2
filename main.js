@@ -7,8 +7,8 @@ let splashwindow, indexwindow, palisearchwindow
 function createIndexWindow () {
   indexwindow = new BrowserWindow({
     titleBarStyle: 'hidden',
-    width: 1264,
-    height: 800,
+    width: 800,
+    height: 600,
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true
@@ -28,8 +28,8 @@ function createIndexWindow () {
 }
 function createWindow(attributes=null,filename="index.html") {
   let window = new BrowserWindow({
-      height: 800,
-      width: 1264,
+      width: 800,
+      height: 600,
       icon: path.join(__dirname, 'images/picon.png'),
       backgroundColor: '#606061',
       webPreferences: {
@@ -139,7 +139,7 @@ ipcMain.on("close-splash-window", (event, arg)=>{
   setTimeout(handleSplashCloseSignal, 3000)
 })
 ipcMain.on('opennewwindow',(ipcevent, attributes)=>{
-  createWindow(attributes)
+  createWindow(attributes,"palisearch.html")
   
 })
 
