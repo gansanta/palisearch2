@@ -253,6 +253,18 @@ function attachListners(){
     if(e.key == "Enter") handleAllPagesPaliInput()
   }
 
+  document.onkeydown = (e)=>{
+    //if(e.key === 'Escape') UIM.hideAllFloatings()
+
+    //set ctrl+n for opening new window
+    //else 
+    if(e.ctrlKey && e.key == "n"){ 
+      let attributes = null
+      console.log("new window")
+      ipcRenderer.send("opennewwindow",attributes)
+    }
+  }
+
 }
 async function loadPagewordsDatabase(){
   let categories = ["mul","att","tik","ann"]
