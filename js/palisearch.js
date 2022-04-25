@@ -384,7 +384,13 @@ async function preparePageByPageSearch(bnwords){
   showCatButtons(groupcatobjs, bnwords)
 }
 
-function showCatButtons(groupcatobjs, bnwords){
+/**
+ * 
+ * @param {*} groupcatobjs 
+ * @param {*} bnwords 
+ * @param {*} bntext used for single word search, default is null
+ */
+function showCatButtons(groupcatobjs, bnwords, bntext=null){
   let catlabels = ["মূল","অর্থকথা","টীকা","অন্যান্য"]
   let cattags = ["mul","att","tik","ann"]
 
@@ -405,7 +411,7 @@ function showCatButtons(groupcatobjs, bnwords){
         let cattag = this.getAttribute("tag")  
         let catfiles = groupcatobjs[cattag]
 
-        await showSubcatButtons(cattag,catfiles, bnwords)
+        await showSubcatButtons(cattag,catfiles, bnwords, bntext)
 
       })
     
@@ -524,7 +530,7 @@ function showTabWordsNew(tabwordlist, wordlist, bntext){
       //reset catdiv
       d3.select("#categorydiv").html("") //reset
       let groupcatobjs = await getGroupedCatFilelist(filelist)
-      showCatButtons(groupcatobjs, [word])
+      showCatButtons(groupcatobjs, [word], bntext)
     })
 
   let firstli = document.querySelector("#leftol").firstChild
@@ -542,7 +548,7 @@ function clickFirstResultChild(divid){
     
   }
 }
-async function showSubcatButtons(cattag, catfiles, bnwords){
+async function showSubcatButtons(cattag, catfiles, bnwords, bntext){
   let subcatdivid = "subcategorydiv"
   d3.select("#"+subcatdivid).html("") //reset
   d3.select("#sengroupdiv").html("")
@@ -573,7 +579,7 @@ async function showSubcatButtons(cattag, catfiles, bnwords){
       
       //show filegroupbuttons
       let groupnum = getNumberOfGroups(scfileobjs[subcattag].length, FILENUM)
-      showFilegroupButtons(groupnum, "sengroupdiv", scfileobjs[subcattag], bnwords)
+      showFilegroupButtons(groupnum, "sengroupdiv", scfileobjs[subcattag], bnwords, bntext)
     })
 
     clickFirstResultChild(subcatdivid)
@@ -581,7 +587,7 @@ async function showSubcatButtons(cattag, catfiles, bnwords){
 
 
 
-function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
+function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords, bntext){
   d3.select("#"+subcatdivid).html("") //reset
   //create an array of numbers, to be used on button text
   let dataarray = [...Array(groupnum+1).keys()].slice(1) 
@@ -605,7 +611,9 @@ function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
       let scfilelist = scobjfilelist.map(w => w.filepath)
       let tabfilelist = getListForTab(tabindex-1, scfilelist, FILENUM)
 
-      let tabsenlist = await getTabSenList(tabfilelist, bnwords)
+      let tabsenlist = await getTabSenList(tabfilelist, bnwords, bntext)
+      console.log(tabsenlist, bnwords)
+
       if(tabsenlist.length <= 0){
         //click on the next sibling
         let nextbutton = this.nextElementSibling
@@ -619,7 +627,7 @@ function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords){
   if(firstbutton && firstbutton.tagName == "BUTTON") firstbutton.click()
 }
 
-async function getTabSenList(tabfilelist, bnwords){
+async function getTabSenList(tabfilelist, bnwords, bntext){
   
   //get tab sentences
   let tabsenlist = []
@@ -632,7 +640,10 @@ async function getTabSenList(tabfilelist, bnwords){
     //get bookname and pagename
     let {booktitle,bookid,pageid} = getBookTitle(filepath)
     let pagetitle = getPageTitle(bookid, pageid)
-    let paradocs = await getFilteredParaDocs(filepath, bnwords)
+
+    let paradocs = []
+    if(bntext) paradocs = await getFilteredParaDocs(filepath, [bntext]) //if single word
+    else paradocs = await getFilteredParaDocs(filepath, bnwords)
 
     for(let pdoc of paradocs){
       let sentences = textToSentences(pdoc.content)
