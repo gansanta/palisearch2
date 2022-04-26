@@ -161,7 +161,7 @@ async function loadPagewordsDatabase(){
   pagewordsDocs = [] //reset docs
   
   for(let c of categories){
-    let dbpath = './db2/'+c+"words.db"
+    let dbpath = path.join(process.resourcesPath,"db2",c,"words.db")
     let db = getDB(dbpath)
     console.log(db)
 
