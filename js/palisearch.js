@@ -46,80 +46,13 @@ const booktitlelist = [
   'মোগ্গল্লান ৰুত্তিৰিৰরণপঞ্চিকা','থূপৰংস','দাঠাৰংস','ধাতুপাঠৰিলাসিনিযা','ধাতুৰংস','হত্থৰনগল্লৰিহারৰংস','জিনচরিতয','জিনৰংসদীপং','তেলকটাহগাথা','মিলিদটীকা','পদমঞ্জরী','পদসাধনং','সদ্দবিন্দুপকরণং','কচ্চাযনধাতুমঞ্জুসা','সামন্তকূটৰণ্ণনা'
 ]
 
-const bnromanall = [
-    {bn:"অ", en: "a", type:"vowel"},
-    {bn:"আ", en: "ā", type:"vowel"},
-    {bn:"ই", en: "i", type:"vowel"},
-    {bn:"ঈ", en: "ī", type:"vowel"},
-    {bn:"উ", en: "u", type:"vowel"},
-    {bn:"ঊ", en: "ū", type:"vowel"},
-    {bn:"এ", en: "e", type:"vowel"},
-    {bn:"ও", en: "o", type:"vowel"},
 
-    {bn:"ক", en: "k", type:"consonant"},
-    {bn:"খ", en: "kh", type:"consonant"},
-    {bn:"গ", en: "g", type:"consonant"},
-    {bn:"ঘ", en: "gh", type:"consonant"},
-    {bn:"ঙ", en: "ṅ", type:"consonant"},
-    {bn:"চ", en: "c", type:"consonant"},
-    {bn:"ছ", en: "ch", type:"consonant"},
-    {bn:"জ", en: "j", type:"consonant"},
-    {bn:"ঝ", en: "jh", type:"consonant"},
-    {bn:"ঞ", en: "ñ", type:"consonant"},
-    {bn:"ট", en: "ṭ", type:"consonant"},
-    {bn:"ঠ", en: "ṭh", type:"consonant"},
-    {bn:"ড", en: "ḍ", type:"consonant"},
-    {bn:"ঢ", en: "ḍh", type:"consonant"},
-    {bn:"ণ", en: "ṇ", type:"consonant"},
-    {bn:"ত", en: "t", type:"consonant"},
-    {bn:"থ", en: "th", type:"consonant"},
-    {bn:"দ", en: "d", type:"consonant"},
-    {bn:"ধ", en: "dh", type:"consonant"},
-    {bn:"ন", en: "n", type:"consonant"},
-    {bn:"প", en: "p", type:"consonant"},
-    {bn:"ফ", en: "ph", type:"consonant"},
-    {bn:"ব", en: "b", type:"consonant"},
-    {bn:"ভ", en: "bh", type:"consonant"},
-    {bn:"ম", en: "m", type:"consonant"},
-    {bn:"য", en: "y", type:"consonant"},
-    {bn:"র", en: "r", type:"consonant"},
-    {bn:"ল", en: "l", type:"consonant"},
-    {bn:"ৰ", en: "v", type:"consonant"},
-    {bn:"শ", en: "s", type:"consonant"},
-    {bn:"ষ", en: "s", type:"consonant"},    
-    {bn:"স", en: "s", type:"consonant"},
-    {bn:"হ", en: "h", type:"consonant"},
-    {bn:"ল়", en: "ḷ", type:"consonant"},
-    {bn:"ং", en: "ṃ", type:"consonant"},
-    {bn:"ং", en: "ṁ", type:"consonant"}, //ŋ ṁ
-    {bn:"ং", en: "ŋ", type:"consonant"},
-
-    {bn:"া", en: "ā", type:"vsign"},
-    {bn:"ি", en: "i", type:"vsign"},
-    {bn:"ী", en: "ī", type:"vsign"},
-    {bn:"ু", en: "u", type:"vsign"},
-    {bn:"ূ", en: "ū", type:"vsign"},
-    {bn:"ে", en: "e", type:"vsign"},
-    {bn:"ো", en: "o", type:"vsign"}
-]
-
-let ghosachars = ["k","g","c","j","ṭ","ḍ","t","d","p","b"]
-//to store dbpath and db later
-let previous = {
-    dbpath: null,
-    db: null
-}
 let dbs = {}
 
 let pagewordsDocs = [] //preload it
 let isResultSaved = false //flag for saving result
 
-let allpagesfolderpath = path.join(__dirname,"db2","pages")
-let pagewordsdbpath = "./db2/pagewords.db" // page => wordlist
-let searchhistorydbpath2 = "./db2/searchhistory2.db"
 
-let shistoryfolder = "./db2/shistoryfiles"
-let shistorylistdbpath = "./db2/shistorylist.db"
 
 window.onload = async ()=>{
   attachListners()
@@ -142,7 +75,6 @@ function attachListners(){
     //else 
     if(e.ctrlKey && e.key == "n"){ 
       let attributes = null
-      console.log("new window")
       ipcRenderer.send("opennewwindow",attributes)
     }
   }
@@ -161,11 +93,13 @@ async function loadPagewordsDatabase(){
   pagewordsDocs = [] //reset docs
   
   for(let c of categories){
-    let dbpath = path.join(process.resourcesPath,"db2",c,"words.db")
+    let dbpath = path.join(process.resourcesPath,"assets","db2",c+"words.db")
+    console.log(dbpath)
     let db = getDB(dbpath)
     console.log(db)
-
+    
     let docs = await getDocs(db)
+
     console.log(docs)
 
     pagewordsDocs.push(...docs)
@@ -174,7 +108,6 @@ async function loadPagewordsDatabase(){
   function getDocs(db){
     return new Promise((resolve,rejejct)=>{
         db.find({},(err,docs)=>{
-          console.log(err, docs)
           resolve(docs)
         })    
     })  
@@ -196,14 +129,12 @@ function resetLeftolRigtholSearchDiv(){
 async function handleAllPagesPaliInput(){
   let t0 = performance.now()
 
-  //clear previous result
   resetLeftolRigtholSearchDiv()
 
   //reset isResultSaved
   isResultSaved = false
 
   //get input text //single word 
-  //let bntext = getBnText()
   let bntext = document.querySelector("#paliinput").value.trim()
   if(bntext.length <= 0) return 
 
@@ -505,7 +436,6 @@ function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords, bnt
       let tabfilelist = getListForTab(tabindex-1, scfilelist, FILENUM)
 
       let tabsenlist = await getTabSenList(tabfilelist, bnwords, bntext)
-
       if(tabsenlist.length <= 0){
         //click on the next sibling
         let nextbutton = this.nextElementSibling
@@ -526,6 +456,8 @@ async function getTabSenList(tabfilelist, bnwords, bntext){
 
   for(let tf of tabfilelist){
     let filepath = tf.filepath
+    //get modified filepath for built app
+    let mfilepath = path.join(process.resourcesPath,"assets",filepath)
     let cat = tf.cat
     let subcat = tf.subcat
 
@@ -534,8 +466,8 @@ async function getTabSenList(tabfilelist, bnwords, bntext){
     let pagetitle = getPageTitle(bookid, pageid)
 
     let paradocs = []
-    if(bntext) paradocs = await getFilteredParaDocs(filepath, [bntext]) //if single word
-    else paradocs = await getFilteredParaDocs(filepath, bnwords)
+    if(bntext) paradocs = await getFilteredParaDocs(mfilepath, [bntext]) //if single word
+    else paradocs = await getFilteredParaDocs(mfilepath, bnwords)
 
     for(let pdoc of paradocs){
       let sentences = textToSentences(pdoc.content)
@@ -712,4 +644,13 @@ function getDB(dbpath){
     return db
   }
 }
+
+ipcRenderer.on("show-about-alertbox", ()=>{
+  let message = "Pali Search"+"\n"+
+            "A program for Searching Pali Texts"+"\n"+
+            "Made by Gansanta Bhikkhu, 2022"+"\n"+
+            "From Rajbana Vihara, Rangamati, Bangladesh."+"\n"+
+            "Email: schakma94@gmail.com"
+  alert(message)
+})
 

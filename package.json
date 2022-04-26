@@ -5,7 +5,8 @@
   "description": "পালি সার্চ",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build-exe": "electron-packager . --platform=win32 --arch=x64 palisearch --icon=./assets/images/search16.ico --extra-resource='./assets/'"
   },
   "author": "gansanta bhikkhu, email: schakma94@gmail.com",
   "license": "MIT",

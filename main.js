@@ -1,32 +1,11 @@
 const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')
 
+let windows = {}
 
+let palisearchwindow
 
-let splashwindow, indexwindow, palisearchwindow
-function createIndexWindow () {
-  indexwindow = new BrowserWindow({
-    titleBarStyle: 'hidden',
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true
-    },
-    //show: false,
-    icon: path.join(__dirname, 'images/picon.png')
-  })
-
-  indexwindow.loadFile('index.html')
-
-  setMenu()
-  /**
-   * indexwindow.once('ready-to-show', ()=>{
-    indexwindow.show()
-  })
-   */
-}
-function createWindow(attributes=null,filename="index.html") {
+function createWindow(attributes=null,filename="palisearch.html") {
   let window = new BrowserWindow({
       width: 800,
       height: 600,
@@ -43,14 +22,23 @@ function createWindow(attributes=null,filename="index.html") {
 
   setMenu()
 
+ 
+
   return window
 }
-function setMenu(window){
+function setMenu(){
   var menu = Menu.buildFromTemplate([
     {
       label: 'File',
       submenu: [
-         {role: 'quit'}
+        {
+          label: 'New Window',
+          click(){
+            createWindow(null,"palisearch.html")
+          },
+          accelerator: "CmdOrCtrl+N"
+        },
+        {role: 'quit'}
       ]
    },
     {
@@ -61,24 +49,20 @@ function setMenu(window){
          {role: 'paste'},
          {role: 'selectAll'},
          {role: 'separator'},
-         {
-			 label: 'Search History',
-			 click(){
-				 if(window === palisearchwindow)window.webContents.send("show-search-history")}
-		}
       ]
    },
    {
      label: 'Tools',
      submenu: [
-		{role: 'reload'},
-        {role: 'toggleDevTools'}
+		    {role: 'reload'},
+        { role: 'toggleDevTools' },
      ]
   },
    {
       label: 'About',
       click(){
-        window.webContents.send("show-about-alertbox")
+        let fwindow = BrowserWindow.getFocusedWindow()
+        if(fwindow) fwindow.webContents.send("show-about-alertbox")
       }
    }
   ])
@@ -99,7 +83,10 @@ function createPaliSearchWindow () {
 
   palisearchwindow.loadFile('palisearch.html')
 
-  setMenu(palisearchwindow)
+
+  setMenu()
+
+
   
 }
 
@@ -112,20 +99,8 @@ app.on('window-all-closed', () => {
 })
 
 const ipcMain = require('electron').ipcMain
-ipcMain.on("close-splash-window", (event, arg)=>{
-  setTimeout(handleSplashCloseSignal, 3000)
-})
+
 ipcMain.on('opennewwindow',(ipcevent, attributes)=>{
   createWindow(attributes,"palisearch.html")
   
 })
-
-
-
-function handleSplashCloseSignal(){
-  splashwindow.close()
-  indexwindow.show()
-
-  indexwindow.webContents.send("test-db")
-
-}
