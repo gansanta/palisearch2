@@ -163,8 +163,10 @@ async function loadPagewordsDatabase(){
   for(let c of categories){
     let dbpath = './db2/'+c+"words.db"
     let db = getDB(dbpath)
+    console.log(db)
 
     let docs = await getDocs(db)
+    console.log(docs)
 
     pagewordsDocs.push(...docs)
   }
@@ -172,6 +174,7 @@ async function loadPagewordsDatabase(){
   function getDocs(db){
     return new Promise((resolve,rejejct)=>{
         db.find({},(err,docs)=>{
+          console.log(err, docs)
           resolve(docs)
         })    
     })  

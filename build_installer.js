@@ -15,7 +15,7 @@ const OUT_DIR = path.resolve(__dirname, './windows_installer');
 const msiCreator = new MSICreator({
     appDirectory: APP_DIR,
     outputDirectory: OUT_DIR,
-    appIconPath: __dirname + "/image/search16.ico",
+    appIconPath: __dirname + "/images/search16.ico",
     // Configure metadata
     description: 'Pali Search',
     exe: 'PaliSearch',
