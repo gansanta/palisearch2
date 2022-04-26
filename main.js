@@ -30,7 +30,7 @@ function createWindow(attributes=null,filename="index.html") {
   let window = new BrowserWindow({
       width: 800,
       height: 600,
-      icon: path.join(__dirname, 'images/picon.png'),
+      icon: path.join(__dirname, 'images/search16.ico'),
       backgroundColor: '#606061',
       webPreferences: {
           nodeIntegration: true,
@@ -94,7 +94,7 @@ function createPaliSearchWindow () {
       enableRemoteModule: true
     },
     //show: false,
-    icon: path.join(__dirname, 'images/picon.png')
+    icon: path.join(__dirname, 'images/search16.ico')
   })
 
   palisearchwindow.loadFile('palisearch.html')
@@ -102,31 +102,8 @@ function createPaliSearchWindow () {
   setMenu(palisearchwindow)
   
 }
-function createSplashWindow() {
-  splashwindow = new BrowserWindow({
-    titleBarStyle: 'hidden',
-    width: 700,
-    height: 500,
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true
-    },
-    transparent: true,
-    frame: false,
-    show:false
-    //alwaysOnTop: true
-  })
-
-  splashwindow.loadFile('splashloader.html')
-  splashwindow.once('ready-to-show', ()=>{
-    splashwindow.show()
-  })
-
-  createIndexWindow()
-}
 
 app.whenReady().then(createPaliSearchWindow)
-//app.whenReady().then(createSplashWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -147,11 +124,8 @@ ipcMain.on('opennewwindow',(ipcevent, attributes)=>{
 
 function handleSplashCloseSignal(){
   splashwindow.close()
-  //createIndexWindow()
   indexwindow.show()
 
-  //let ipcmain = require('electron').ipcMain
-  //ipcmain.send
   indexwindow.webContents.send("test-db")
 
 }

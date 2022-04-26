@@ -123,125 +123,8 @@ let shistorylistdbpath = "./db2/shistorylist.db"
 
 window.onload = async ()=>{
   attachListners()
-  //await separateWorddb()
-  //dotest()
-  //task()
-  //dbtest()
 }
 
-
-
-let bnsentence = ""
-
-//---------------
-async function separateWorddb(){
-  await loadPagewordsDatabase()
-
-  let muls = pagewordsDocs.filter(doc=> doc.filename.startsWith("ann"))
-  muls = muls.sort((a,b)=>a.filename.localeCompare(b.filename, "en"))
-  
-  //delete id
-  for(let m of muls){ delete m._id}
-
-  let newdbpath = "./db2/annwords.db"
-  let newdb = getDB(newdbpath)
-  for(let i=0; i<muls.length; i++) {
-    await insertDoc(muls[i], newdb)
-    if(i%10 == 0) console.log(i)
-  }
-
-}
-function insertDoc(doc, db){
-  return new Promise((resolve,reject)=>{
-    db.insert(doc, (err, newdoc)=>{
-      if(err) reject(err)
-      else resolve(newdoc)
-    })
-  })
-}
-
-function dbtest(){
-  let fpath = "./db2/here/ok"
-  let db = getDB(fpath)
-}
-function dotest(){
-  let db = getDB(pagewordsdbpath)
-  db.find({},(err,docs)=>{
-    for(let i=0; i<docs.length; i++){
-      docs[i].filepath = docs[i].filepath.replace("/home/palitranslation/Desktop/palisearch", ".")
-      delete docs[i]._id
-
-      if(i == docs.length-1){
-        let fpath = "./db2/ff.db"
-        let fdb = getDB(fpath)
-        fdb.insert(docs, (err, newdocs)=>{
-        })
-      }
-    }
-  })
-}
-function task(){
-  let db = getDB(searchhistorydbpath2)
-  db.find({}, (err, docs)=>{
-    
-    let slistdb = getDB(shistorylistdbpath)
-    //return
-    
-    //for every history item, create a doc in the historylist
-    //then with that id, create a dbfile with filelist in it
-    let docindex = 0
-    handleDoc(docindex)
-
-    function handleDoc(docindex){
-      if(docindex < docs.length){
-        let doc = docs[docindex]
-        
-        //now delete filelist and id
-        //delete doc.filelist
-
-        let newdoc = {
-          note: doc.note,
-          searchterm: doc.searchterm,
-          searchtype: doc.searchtype,
-          timestamp: doc.timestamp
-        }
-
-        slistdb.insert(newdoc, (err, newdoc2)=>{
-          if(newdoc2) {
-
-            //then make a dbfile with the docid
-            let filepath = path.join(shistoryfolder, newdoc2._id)
-            let fdb = getDB(filepath)
-
-            let filelist = doc.filelist
-            if(filelist){
-              for(let i=0; i<filelist.length; i++){
-                if(doc.searchtype == "pagebypage")filelist[i] = filelist[i].replace("/home/palitranslation/Desktop/palisearch", ".")
-                else if(doc.searchtype == "wordlist"){
-                  filelist[i].filepath = filelist[i].filepath.replace("/home/palitranslation/Desktop/palisearch", ".")
-                }
-              }
-            }
-            
-            fdb.insert({filelist: doc.filelist ? doc.filelist:[]}, (err, newdoc3)=>{
-              if(newdoc3){
-                docindex++
-                handleDoc(docindex)
-              }
-              else console.log("sth is wrong in inserting filelist for "+doc._id)
-            })
-
-            
-          }
-          else console.log("sth is wrong in updating for "+doc._id)
-        })
-      }
-      else {
-        console.log("finished!")
-      }
-    }
-  })
-}
 
 //----------------
 
@@ -263,6 +146,13 @@ function attachListners(){
       ipcRenderer.send("opennewwindow",attributes)
     }
   }
+
+  let charspans = document.querySelectorAll(".charspan")
+  charspans.forEach(chspnan => chspnan.onclick = ()=>{
+    document.querySelector("#paliinput").value += chspnan.innerText
+    document.querySelector("#paliinput").focus()
+  })
+
 
 }
 async function loadPagewordsDatabase(){
@@ -612,7 +502,6 @@ function showFilegroupButtons(groupnum, subcatdivid, scobjfilelist, bnwords, bnt
       let tabfilelist = getListForTab(tabindex-1, scfilelist, FILENUM)
 
       let tabsenlist = await getTabSenList(tabfilelist, bnwords, bntext)
-      console.log(tabsenlist, bnwords)
 
       if(tabsenlist.length <= 0){
         //click on the next sibling

@@ -172,3 +172,11 @@ hr{
   justify-content: space-between;
 }
 
+.charspan{
+  padding: 0 10px;
+}
+.charspan:hover{
+  background-color: #7A6262;
+  color:rgb(255, 255, 255);
+  cursor: copy ;
+}
