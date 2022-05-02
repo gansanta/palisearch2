@@ -6,14 +6,15 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build-exe": "electron-packager . --platform=win32 --arch=x64 palisearch --icon='C:/Users/ASUS/source/mygithubrepos/projectassets/palisearch2/assets/images/search16.ico' --extra-resource='C:/Users/ASUS/source/mygithubrepos/projectassets/palisearch2/assets/'"
+    "build-exe": "electron-packager . --platform=win32 --arch=x64 palisearch --icon='C:/Users/ASUS/source/mygithubrepos/projectassets/palisearch2/assets/images/search16.ico' --extra-resource='C:/Users/ASUS/source/mygithubrepos/projectassets/palisearch2/assets/' --win32metadata.requested-execution-level=requireAdministrator"
   },
   "author": "gansanta bhikkhu, email: schakma94@gmail.com",
   "license": "MIT",
   "devDependencies": {
     "electron": "^11.3.0",
     "electron-winstaller": "^5.0.0",
-    "electron-wix-msi": "^4.0.0"
+    "electron-wix-msi": "^4.0.0",
+    "exe-icon-extractor": "^1.0.8"
   },
   "dependencies": {
     "nedb": "^1.8.0"

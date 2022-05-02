@@ -15,23 +15,34 @@ const OUT_DIR = path.resolve(__dirname, './windows_installer');
 const msiCreator = new MSICreator({
     appDirectory: APP_DIR,
     outputDirectory: OUT_DIR,
-    appIconPath: __dirname + "/assets/images/search16.ico",
+    appIconPath: "C:/Users/ASUS/source/mygithubrepos/projectassets/palisearch2/assets/images/search16.ico",
     // Configure metadata
     description: 'Pali Search',
     exe: 'PaliSearch',
     name: 'PaliSearch',
     manufacturer: 'Gansanta Bhikkhu',
-    version: '1.1.0',
+    version: '3.2.0',
 
     // Configure installer User Interface
     ui: {
         chooseDirectory: true
     },
+
+    //for admin privileges
+    installPrivileges:"elevated",
+    installScope:"perMachine",
+
 });
 
 // 4. Create a .wxs template file
 msiCreator.create().then(function(){
 
     // Step 5: Compile the template to a .msi file
+    //still not working 
     msiCreator.compile();
+
+    //although it still requires right click and run as admin to work, otherwise
+    //nedb doesn't work. so it just stops ad database loading... please wait.
+    //so I don't recommend building msi in this way, unless asks for privileges
+    alert("finished creating "+msiCreator.name+" msi package.")
 });

@@ -94,13 +94,9 @@ async function loadPagewordsDatabase(){
   
   for(let c of categories){
     let dbpath = path.join(process.resourcesPath,"assets","db2",c+"words.db")
-    console.log(dbpath)
     let db = getDB(dbpath)
-    console.log(db)
     
     let docs = await getDocs(db)
-
-    console.log(docs)
 
     pagewordsDocs.push(...docs)
   }
@@ -634,8 +630,6 @@ function clearRightDiv(){
 }
 
 function getDB(dbpath){
-  let db
-
   if(dbpath in dbs) return dbs[dbpath]
   else {
     const db = new Datastore({filename: dbpath})
