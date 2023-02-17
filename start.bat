@@ -1,2 +1,2 @@
-cd C:\Users\ASUS\source\mygithubrepos\palisearch2
+cd /d %~dp0
 npm start

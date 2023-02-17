@@ -184,8 +184,14 @@ function getFilteredWordlist(filtereddocs, bntext){
 }
 
 async function prepareSingleWordSearch(bntext){
+  console.log(bntext)
+  console.log(pagewordsDocs)
   let filtereddocs = pagewordsDocs.filter(doc => doc.pagewords.find(ff => ff.includes(bntext)))
+  console.log(filtereddocs)
   let wordlist = getFilteredWordlist(filtereddocs,bntext)
+
+  console.log(wordlist)
+
   let groupnum = getNumberOfGroups(Object.keys(wordlist).length, WORDNUM)
   showButtonsNew("#wordgroupdiv", groupnum, wordlist, bntext)
 }
@@ -296,8 +302,11 @@ function getSearchOption(){
 
 
 function showButtonsNew(divid,groupnum, wordlist,bntext){
+  console.log(bntext)
+  console.log(wordlist)
   let dataarray = [...Array(groupnum+1).keys()].slice(1) 
   let wordlistkeys = Object.keys(wordlist).sort((a,b)=>a.localeCompare(b, "bn"))
+  console.log(wordlistkeys)
 
   d3.select(divid).selectAll("button")
     .data(dataarray)
@@ -308,6 +317,7 @@ function showButtonsNew(divid,groupnum, wordlist,bntext){
 
     //on click show the tabwordlist
     .on("click",function(i){
+      console.log("hello")
        setElementSelected(this, "wbtnselected")
        //get the number 
        let tabindex = parseInt(this.getAttribute("index"), 10)
@@ -327,6 +337,7 @@ function getListForTab(tabindex, list, NUM){
   return list.slice(findex, lindex)
 }
 function showTabWordsNew(tabwordlist, wordlist, bntext){
+  console.log(bntext)
   let leftol = d3.select("#leftol").html("") //reset
    
   if(tabwordlist.length == 0) return
